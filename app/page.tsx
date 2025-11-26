@@ -1,9 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tractor, Navigation, Clock, AlertCircle } from 'lucide-react'
+import { Tractor, Navigation, Clock, AlertCircle, MapPin } from 'lucide-react'
+import './leaflet.css'
+
+// Importar Map dinamicamente (client-side only)
+const Map = dynamic(() => import('@/components/map'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[500px] w-full rounded-lg border bg-gray-100 flex items-center justify-center">
+      <p className="text-gray-600">Carregando mapa...</p>
+    </div>
+  )
+})
 
 interface Device {
   id: number
@@ -25,7 +37,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDevices()
-    // Atualizar a cada 10 segundos
     const interval = setInterval(fetchDevices, 10000)
     return () => clearInterval(interval)
   }, [])
@@ -50,6 +61,7 @@ export default function DashboardPage() {
 
   const onlineDevices = devices.filter(d => d.status === 'online').length
   const offlineDevices = devices.filter(d => d.status === 'offline').length
+  const devicesWithPosition = devices.filter(d => d.position).length
 
   if (loading) {
     return (
@@ -132,17 +144,31 @@ export default function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Atualização
+                Com GPS
               </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">
-                {new Date().toLocaleTimeString('pt-BR')}
-              </div>
+              <div className="text-2xl font-bold text-blue-600">{devicesWithPosition}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Mapa */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Localização em Tempo Real
+            </CardTitle>
+            <CardDescription>
+              Posição GPS das máquinas na Fazenda Santa Inês
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Map devices={devices} />
+          </CardContent>
+        </Card>
 
         {/* Devices List */}
         <Card>
