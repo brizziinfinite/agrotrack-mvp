@@ -1,6 +1,6 @@
 'use client'
 
-import { Tractor, MapPin, Activity, Menu } from 'lucide-react'
+import { Tractor, MapPin, Activity, Menu, History, Plus } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Header() {
@@ -28,11 +28,18 @@ export default function Header() {
           {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center gap-6">
             <a
-              href="#dashboard"
+              href="/"
               className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
             >
               <Activity className="h-4 w-4" />
               Dashboard
+            </a>
+            <a
+              href="/historico"
+              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
+            >
+              <History className="h-4 w-4" />
+              Histórico
             </a>
             <a
               href="#mapa"
@@ -47,6 +54,13 @@ export default function Header() {
             >
               <Tractor className="h-4 w-4" />
               Máquinas
+            </a>
+            <a
+              href="/maquinas/nova"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+            >
+              <Plus className="h-4 w-4" />
+              Novo
             </a>
           </nav>
 
@@ -70,11 +84,18 @@ export default function Header() {
           <div className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4">
               <a
-                href="#dashboard"
+                href="/"
                 className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
               >
                 <Activity className="h-4 w-4" />
                 Dashboard
+              </a>
+              <a
+                href="/historico"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
+              >
+                <History className="h-4 w-4" />
+                Histórico
               </a>
               <a
                 href="#mapa"
@@ -89,6 +110,13 @@ export default function Header() {
               >
                 <Tractor className="h-4 w-4" />
                 Máquinas
+              </a>
+              <a
+                href="/maquinas/nova"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+              >
+                <Plus className="h-4 w-4" />
+                Novo Rastreador
               </a>
             </nav>
           </div>

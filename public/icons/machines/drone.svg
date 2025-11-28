@@ -1,0 +1,13 @@
+<svg width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+  <g fill="currentColor" stroke="#1F1F1F" stroke-width="3">
+    <rect x="50" y="60" width="40" height="20" rx="4"/>
+    <circle cx="30" cy="40" r="15" fill="currentColor" opacity="0.6"/>
+    <circle cx="110" cy="40" r="15" fill="currentColor" opacity="0.6"/>
+    <circle cx="30" cy="100" r="15" fill="currentColor" opacity="0.6"/>
+    <circle cx="110" cy="100" r="15" fill="currentColor" opacity="0.6"/>
+    <line x1="50" y1="70" x2="30" y2="40" stroke="currentColor" stroke-width="3"/>
+    <line x1="90" y1="70" x2="110" y2="40" stroke="currentColor" stroke-width="3"/>
+    <line x1="50" y1="70" x2="30" y2="100" stroke="currentColor" stroke-width="3"/>
+    <line x1="90" y1="70" x2="110" y2="100" stroke="currentColor" stroke-width="3"/>
+  </g>
+</svg>

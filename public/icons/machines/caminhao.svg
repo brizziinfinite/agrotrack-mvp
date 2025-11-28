@@ -1,0 +1,8 @@
+<svg width="140" height="100" viewBox="0 0 140 100" xmlns="http://www.w3.org/2000/svg">
+  <g fill="currentColor" stroke="#1F1F1F" stroke-width="3">
+    <rect x="20" y="45" width="80" height="30" rx="4" transform="skewY(-10)"/>
+    <rect x="85" y="35" width="35" height="25" rx="4" transform="skewY(-10)"/>
+    <circle cx="40" cy="85" r="12" fill="#222"/>
+    <circle cx="100" cy="85" r="12" fill="#222"/>
+  </g>
+</svg>

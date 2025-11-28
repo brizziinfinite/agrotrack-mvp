@@ -1,0 +1,10 @@
+<svg width="140" height="130" viewBox="0 0 140 130" xmlns="http://www.w3.org/2000/svg">
+  <g fill="currentColor" stroke="#1F1F1F" stroke-width="3">
+    <rect x="35" y="55" width="50" height="30" rx="4" transform="skewY(-15)"/>
+    <rect x="65" y="40" width="30" height="25" rx="4" transform="skewY(-15)"/>
+    <polygon points="95,50 110,30 120,35 115,50 110,60" fill="currentColor"/>
+    <polygon points="15,50 30,55 30,70 20,75" fill="currentColor"/>
+    <circle cx="50" cy="100" r="15" fill="#222"/>
+    <circle cx="95" cy="95" r="18" fill="#222"/>
+  </g>
+</svg>

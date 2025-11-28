@@ -29,6 +29,17 @@ interface Device {
     deviceTime: string
     attributes: any
   } | null
+  metadata?: {
+    icone: string
+    cor: string
+    foto: string | null
+    descricao: string | null
+    tipo: string
+    placa: string | null
+    marca: string | null
+    modelo: string | null
+    ano: string | null
+  }
 }
 
 export default function DashboardPage() {
@@ -196,61 +207,103 @@ export default function DashboardPage() {
           {/* Devices List */}
           <Card id="maquinas" className="border-none shadow-lg">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Tractor className="h-5 w-5 text-green-600" />
-                Máquinas Cadastradas
-              </CardTitle>
-              <CardDescription>
-                Lista de todos os rastreadores SL48 configurados
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tractor className="h-5 w-5 text-green-600" />
+                    Máquinas Cadastradas
+                  </CardTitle>
+                  <CardDescription>
+                    Lista de todos os rastreadores GPS configurados
+                  </CardDescription>
+                </div>
+                <a
+                  href="/maquinas/nova"
+                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30 flex items-center gap-2 text-sm"
+                >
+                  <span className="text-xl">+</span>
+                  Novo Rastreador
+                </a>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-3">
-                {devices.map((device) => (
-                  <div
-                    key={device.id}
-                    className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:from-green-200 group-hover:to-emerald-200 transition-all duration-300">
-                        <Tractor className="h-6 w-6 text-green-700" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{device.name}</h3>
-                        <p className="text-sm text-gray-500">ID: {device.id}</p>
-                      </div>
-                    </div>
+                {devices.map((device) => {
+                  const icone = device.metadata?.icone || '🚜'
+                  const cor = device.metadata?.cor || '#10b981'
+                  const descricao = device.metadata?.descricao
+                  const placa = device.metadata?.placa
+                  const marca = device.metadata?.marca
+                  const modelo = device.metadata?.modelo
 
-                    <div className="flex items-center gap-6">
-                      {device.position && (
-                        <>
-                          <div className="text-right hidden md:block">
-                            <p className="text-xs text-gray-500 font-medium">Velocidade</p>
-                            <p className="font-bold text-gray-900">
-                              {Math.round(device.position.speed)} km/h
-                            </p>
+                  return (
+                    <div
+                      key={device.id}
+                      className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className="h-14 w-14 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110"
+                          style={{
+                            backgroundColor: cor,
+                            boxShadow: `0 4px 14px ${cor}40`
+                          }}
+                        >
+                          <span className="text-3xl">{icone}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg text-gray-900">
+                            {device.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            {placa && (
+                              <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+                                {placa}
+                              </span>
+                            )}
+                            {marca && modelo && (
+                              <span>{marca} {modelo}</span>
+                            )}
+                            {!placa && !marca && descricao && (
+                              <span className="line-clamp-1">{descricao}</span>
+                            )}
+                            {!placa && !marca && !descricao && (
+                              <span>ID: {device.id}</span>
+                            )}
                           </div>
-                          <div className="text-right hidden lg:block">
-                            <p className="text-xs text-gray-500 font-medium">Última atualização</p>
-                            <p className="font-semibold text-xs text-gray-700">
-                              {new Date(device.position.deviceTime).toLocaleString('pt-BR')}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                      <Badge
-                        variant={device.status === 'online' ? 'default' : 'secondary'}
-                        className={
-                          device.status === 'online'
-                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-md shadow-green-600/30'
-                            : 'bg-gray-400'
-                        }
-                      >
-                        {device.status === 'online' ? 'Online' : 'Offline'}
-                      </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        {device.position && (
+                          <>
+                            <div className="text-right hidden md:block">
+                              <p className="text-xs text-gray-500 font-medium">Velocidade</p>
+                              <p className="font-bold text-gray-900">
+                                {Math.round(device.position.speed)} km/h
+                              </p>
+                            </div>
+                            <div className="text-right hidden lg:block">
+                              <p className="text-xs text-gray-500 font-medium">Última atualização</p>
+                              <p className="font-semibold text-xs text-gray-700">
+                                {new Date(device.position.deviceTime).toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                        <Badge
+                          variant={device.status === 'online' ? 'default' : 'secondary'}
+                          style={{
+                            backgroundColor: device.status === 'online' ? cor : '#9ca3af'
+                          }}
+                          className="shadow-md"
+                        >
+                          {device.status === 'online' ? 'Online' : 'Offline'}
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
 
                 {devices.length === 0 && (
                   <div className="text-center py-12 text-gray-500">
@@ -258,9 +311,16 @@ export default function DashboardPage() {
                       <Tractor className="h-8 w-8 opacity-50" />
                     </div>
                     <p className="font-medium">Nenhuma máquina cadastrada ainda.</p>
-                    <p className="text-sm mt-2">
-                      Configure os rastreadores SL48 no Traccar.
+                    <p className="text-sm mt-2 mb-4">
+                      Adicione seu primeiro rastreador GPS ao sistema.
                     </p>
+                    <a
+                      href="/maquinas/nova"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30"
+                    >
+                      <span className="text-xl">+</span>
+                      Adicionar Rastreador
+                    </a>
                   </div>
                 )}
               </div>
