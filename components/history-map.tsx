@@ -73,6 +73,47 @@ const endIcon = L.divIcon({
   popupAnchor: [0, -16]
 })
 
+// Ícone de replay (trator animado - azul pulsante)
+const replayIcon = L.divIcon({
+  className: 'custom-marker-icon',
+  html: `
+    <div style="
+      position: relative;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    ">
+      <div style="
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);
+        border: 4px solid white;
+        animation: pulse 2s ease-in-out infinite;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+          <path d="M4 19h2c0 1.103.897 2 2 2h8c1.103 0 2-.897 2-2h2c1.103 0 2-.897 2-2v-6c0-1.103-.897-2-2-2h-2.414l-.707-.707C16.902 10.316 16.831 10 16 10h-3V7c0-.552-.448-1-1-1H6c-.552 0-1 .448-1 1v3H3c-.552 0-1 .448-1 1s.448 1 1 1h2v7c0 1.103.897 2 2 2zM8 8h3v2H8V8zm0 11c-1.103 0-2-.897-2-2s.897-2 2-2 2 .897 2 2-.897 2-2 2zm8 0c-1.103 0-2-.897-2-2s.897-2 2-2 2 .897 2 2-.897 2-2 2z"/>
+        </svg>
+      </div>
+    </div>
+    <style>
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+    </style>
+  `,
+  iconSize: [40, 40],
+  iconAnchor: [20, 20],
+  popupAnchor: [0, -20]
+})
+
 interface Position {
   latitude: number
   longitude: number
@@ -80,9 +121,18 @@ interface Position {
   deviceTime: string
 }
 
+interface SpeedConfig {
+  low: number
+  ideal: number
+  high: number
+}
+
 interface HistoryMapProps {
   positions: Position[]
   deviceName: string
+  replayMode?: boolean
+  currentReplayIndex?: number
+  speedConfig?: SpeedConfig
 }
 
 // Componente para ajustar o mapa à rota
@@ -101,7 +151,7 @@ function MapFitBounds({ positions }: { positions: Position[] }) {
   return null
 }
 
-export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
+export default function HistoryMap({ positions, deviceName, replayMode = false, currentReplayIndex = 0, speedConfig }: HistoryMapProps) {
   // Coordenadas padrão (Cândido Mota, SP)
   const defaultCenter: [number, number] = [-22.7467, -50.3489]
 
@@ -122,25 +172,35 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
     ? [positions[0].latitude, positions[0].longitude] as [number, number]
     : defaultCenter
 
+  // Em modo replay, mostrar apenas até o índice atual
+  const visiblePositions = replayMode ? positions.slice(0, currentReplayIndex + 1) : positions
+
   // Criar pontos da rota com cores baseadas na velocidade
-  const routePoints = positions.map(p => [p.latitude, p.longitude] as [number, number])
+  const routePoints = visiblePositions.map(p => [p.latitude, p.longitude] as [number, number])
+
+  // Definir limites de velocidade (usar speedConfig se disponível)
+  const speedLow = speedConfig?.low || 8
+  const speedIdeal = speedConfig?.ideal || 18
+  const speedHigh = speedConfig?.high || 30
 
   // Criar segmentos coloridos baseados na velocidade
   const segments = []
-  for (let i = 0; i < positions.length - 1; i++) {
-    const speed = positions[i].speed
-    let color = '#16a34a' // verde (parado/lento)
+  for (let i = 0; i < visiblePositions.length - 1; i++) {
+    const speed = visiblePositions[i].speed
+    let color = '#3b82f6' // azul (baixa)
 
-    if (speed > 5 && speed <= 15) {
-      color = '#eab308' // amarelo (médio)
-    } else if (speed > 15) {
-      color = '#dc2626' // vermelho (rápido)
+    if (speed > speedLow && speed <= speedIdeal) {
+      color = '#16a34a' // verde (ideal)
+    } else if (speed > speedIdeal && speed <= speedHigh) {
+      color = '#eab308' // amarelo (alta)
+    } else if (speed > speedHigh) {
+      color = '#dc2626' // vermelho (excesso)
     }
 
     segments.push({
       positions: [
-        [positions[i].latitude, positions[i].longitude] as [number, number],
-        [positions[i + 1].latitude, positions[i + 1].longitude] as [number, number]
+        [visiblePositions[i].latitude, visiblePositions[i].longitude] as [number, number],
+        [visiblePositions[i + 1].latitude, visiblePositions[i + 1].longitude] as [number, number]
       ],
       color
     })
@@ -148,6 +208,7 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
 
   const firstPosition = positions[0]
   const lastPosition = positions[positions.length - 1]
+  const currentPosition = replayMode ? positions[currentReplayIndex] : null
 
   return (
     <div className="h-[500px] w-full rounded-lg overflow-hidden border shadow-md">
@@ -216,6 +277,35 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
             </div>
           </Popup>
         </Marker>
+
+        {/* Marcador de replay (posição atual animada) */}
+        {replayMode && currentPosition && (
+          <Marker position={[currentPosition.latitude, currentPosition.longitude]} icon={replayIcon}>
+            <Popup>
+              <div className="p-3 min-w-[200px]">
+                <h3 className="font-bold text-lg mb-2 text-blue-700">Posição Atual</h3>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500">Máquina:</p>
+                    <p className="text-sm font-semibold text-gray-900">{deviceName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Horário:</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {new Date(currentPosition.deviceTime).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Velocidade:</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {currentPosition.speed.toFixed(1)} km/h
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
     </div>
   )

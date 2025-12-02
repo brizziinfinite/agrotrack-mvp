@@ -1,12 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Header from '@/components/header'
+import { logRedirect } from '@/lib/redirect-debugger'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp } from 'lucide-react'
+import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp, Edit, Lock } from 'lucide-react'
+import { useCustomer } from '@/contexts/customer-context'
+import { useProperty } from '@/contexts/property-context'
+import { usePermissions } from '@/contexts/permissions-context'
 import './leaflet.css'
+import type { MapHandle } from '@/components/map'
 
 // Importar Map dinamicamente (client-side only)
 const Map = dynamic(() => import('@/components/map'), {
@@ -43,9 +49,50 @@ interface Device {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { customers, loading: customerLoading } = useCustomer()
+  const { selectedProperty } = useProperty()
+  const { canEditDevices } = usePermissions()
   const [devices, setDevices] = useState<Device[]>([])
+  const [allDevices, setAllDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const mapRef = useRef<MapHandle>(null)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
+  const hasCheckedCustomersRef = useRef(false)
+
+  // Redirect to onboarding if user has no customers
+  useEffect(() => {
+    // Prevent multiple checks
+    if (hasCheckedCustomersRef.current) {
+      console.log('⚠️ [Dashboard] Already checked customers, skipping')
+      return
+    }
+
+    console.log('🏠 [Dashboard] Checking customer status:', {
+      customerLoading,
+      customersCount: customers.length,
+      currentPath: typeof window !== 'undefined' ? window.location.pathname : 'unknown'
+    })
+
+    if (!customerLoading) {
+      hasCheckedCustomersRef.current = true
+
+      if (customers.length === 0) {
+        console.log('🔄 [Dashboard] No customers found, redirecting to /onboarding')
+        const canRedirect = logRedirect('/onboarding', 'Dashboard - No Customers', {
+          hasSession: true,
+          hasUser: true,
+          hasCustomer: false
+        })
+        if (canRedirect) {
+          router.push('/onboarding')
+        }
+      } else {
+        console.log('✅ [Dashboard] User has customers, staying on dashboard')
+      }
+    }
+  }, [customers, customerLoading, router])
 
   useEffect(() => {
     fetchDevices()
@@ -53,13 +100,25 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Filter devices when property changes
+  useEffect(() => {
+    if (selectedProperty && allDevices.length > 0) {
+      // Filter devices by selected property
+      // In a real scenario, you'd have property_id in the device data
+      // For now, we'll show all devices but you can implement filtering based on your data structure
+      setDevices(allDevices)
+    } else {
+      setDevices(allDevices)
+    }
+  }, [selectedProperty, allDevices])
+
   async function fetchDevices() {
     try {
       const response = await fetch('/api/traccar/devices')
       const result = await response.json()
-      
+
       if (result.success) {
-        setDevices(result.data)
+        setAllDevices(result.data)
         setError(null)
       } else {
         setError(result.error)
@@ -69,6 +128,22 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const focusOnMachine = (device: Device) => {
+    if (!device.position) {
+      alert('Esta máquina não possui localização GPS disponível no momento.')
+      return
+    }
+
+    // Focar no dispositivo no mapa
+    mapRef.current?.focusOnDevice(device.id)
+
+    // Scroll suave até o mapa
+    mapContainerRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
   }
 
   const onlineDevices = devices.filter(d => d.status === 'online').length
@@ -189,7 +264,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Mapa */}
-          <Card id="mapa" className="mb-8 border-none shadow-lg overflow-hidden">
+          <Card id="mapa" ref={mapContainerRef} className="mb-8 border-none shadow-lg overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
@@ -200,7 +275,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Map devices={devices} />
+              <Map ref={mapRef} devices={devices} />
             </CardContent>
           </Card>
 
@@ -217,13 +292,23 @@ export default function DashboardPage() {
                     Lista de todos os rastreadores GPS configurados
                   </CardDescription>
                 </div>
-                <a
-                  href="/maquinas/nova"
-                  className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30 flex items-center gap-2 text-sm"
-                >
-                  <span className="text-xl">+</span>
-                  Novo Rastreador
-                </a>
+                {canEditDevices ? (
+                  <a
+                    href="/maquinas/nova"
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30 flex items-center gap-2 text-sm"
+                  >
+                    <span className="text-xl">+</span>
+                    Novo Rastreador
+                  </a>
+                ) : (
+                  <div
+                    className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg font-medium flex items-center gap-2 text-sm cursor-not-allowed"
+                    title="Sem permissão para adicionar rastreadores"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Novo Rastreador
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -239,7 +324,8 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={device.id}
-                      className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group"
+                      onClick={() => focusOnMachine(device)}
+                      className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group cursor-pointer hover:bg-green-50/30"
                     >
                       <div className="flex items-center gap-4">
                         <div
@@ -300,6 +386,23 @@ export default function DashboardPage() {
                         >
                           {device.status === 'online' ? 'Online' : 'Offline'}
                         </Badge>
+                        {canEditDevices ? (
+                          <a
+                            href={`/maquinas/${device.id}/editar`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all hover:shadow-md"
+                            title="Editar informações"
+                          >
+                            <Edit className="h-5 w-5" />
+                          </a>
+                        ) : (
+                          <div
+                            className="p-2 rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed"
+                            title="Sem permissão para editar"
+                          >
+                            <Lock className="h-5 w-5" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

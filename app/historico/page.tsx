@@ -17,7 +17,10 @@ import {
   Gauge,
   Tractor,
   Search,
-  AlertCircle
+  AlertCircle,
+  Play,
+  Pause,
+  RotateCcw
 } from 'lucide-react'
 import '../leaflet.css'
 
@@ -44,15 +47,25 @@ interface Position {
   deviceTime: string
 }
 
+interface Statistics {
+  totalDistance: number
+  totalTime: number
+  avgSpeed: number
+  maxSpeed: number
+  pointCount: number
+  currentSpeed?: number
+}
+
+interface SpeedConfig {
+  low: number
+  ideal: number
+  high: number
+}
+
 interface HistoryData {
   positions: Position[]
-  statistics: {
-    totalDistance: number
-    totalTime: number
-    avgSpeed: number
-    maxSpeed: number
-    pointCount: number
-  }
+  statistics: Statistics
+  speedConfig?: SpeedConfig
 }
 
 type DateFilter = 'today' | 'yesterday' | 'week' | 'custom'
@@ -68,10 +81,33 @@ export default function HistoricoPage() {
   const [error, setError] = useState<string | null>(null)
   const [devicesLoading, setDevicesLoading] = useState(true)
 
+  // Estados do replay
+  const [isReplayMode, setIsReplayMode] = useState(false)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentReplayIndex, setCurrentReplayIndex] = useState(0)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+
   // Buscar dispositivos ao carregar
   useEffect(() => {
     fetchDevices()
   }, [])
+
+  // Controlar animação do replay
+  useEffect(() => {
+    if (!isPlaying || !historyData || !isReplayMode) return
+
+    const interval = setInterval(() => {
+      setCurrentReplayIndex((prevIndex) => {
+        if (prevIndex >= historyData.positions.length - 1) {
+          setIsPlaying(false)
+          return prevIndex
+        }
+        return prevIndex + 1
+      })
+    }, 1000 / playbackSpeed) // Velocidade ajustável
+
+    return () => clearInterval(interval)
+  }, [isPlaying, playbackSpeed, historyData, isReplayMode])
 
   async function fetchDevices() {
     try {
@@ -170,6 +206,80 @@ export default function HistoricoPage() {
   }
 
   const selectedDeviceName = devices.find(d => d.id === selectedDevice)?.name || ''
+
+  // Funções de controle do replay
+  function startReplay() {
+    setIsReplayMode(true)
+    setCurrentReplayIndex(0)
+    setIsPlaying(true)
+  }
+
+  function togglePlayPause() {
+    setIsPlaying(!isPlaying)
+  }
+
+  function resetReplay() {
+    setCurrentReplayIndex(0)
+    setIsPlaying(false)
+  }
+
+  function exitReplay() {
+    setIsReplayMode(false)
+    setIsPlaying(false)
+    setCurrentReplayIndex(0)
+  }
+
+  // Calcular estatísticas até o ponto atual do replay
+  function getCurrentStats(): Statistics | undefined {
+    if (!historyData || !isReplayMode) {
+      return historyData?.statistics
+    }
+
+    const currentPositions = historyData.positions.slice(0, currentReplayIndex + 1)
+    if (currentPositions.length === 0) return historyData.statistics
+
+    // Calcular distância percorrida até agora (proporcional)
+    const progress = (currentReplayIndex + 1) / historyData.positions.length
+    const currentDistance = historyData.statistics.totalDistance * progress
+
+    // Calcular tempo decorrido
+    const firstTime = new Date(historyData.positions[0].deviceTime).getTime()
+    const currentTime = new Date(historyData.positions[currentReplayIndex].deviceTime).getTime()
+    const currentTotalTime = (currentTime - firstTime) / 1000 / 60 // em minutos
+
+    // Velocidade atual
+    const currentSpeed = historyData.positions[currentReplayIndex].speed
+
+    // Velocidade máxima até agora
+    let currentMaxSpeed = 0
+    for (let i = 0; i <= currentReplayIndex; i++) {
+      if (historyData.positions[i].speed > currentMaxSpeed) {
+        currentMaxSpeed = historyData.positions[i].speed
+      }
+    }
+
+    // Velocidade média até agora
+    let speedSum = 0
+    let speedCount = 0
+    for (let i = 0; i <= currentReplayIndex; i++) {
+      if (historyData.positions[i].speed > 0) {
+        speedSum += historyData.positions[i].speed
+        speedCount++
+      }
+    }
+    const currentAvgSpeed = speedCount > 0 ? speedSum / speedCount : 0
+
+    return {
+      totalDistance: currentDistance,
+      totalTime: currentTotalTime,
+      avgSpeed: currentAvgSpeed,
+      maxSpeed: currentMaxSpeed,
+      pointCount: currentReplayIndex + 1,
+      currentSpeed: currentSpeed
+    }
+  }
+
+  const displayStats = getCurrentStats() || historyData?.statistics
 
   return (
     <>
@@ -354,10 +464,10 @@ export default function HistoricoPage() {
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <div className="text-3xl font-bold">
-                      {historyData.statistics.totalDistance.toFixed(2)} km
+                      {displayStats?.totalDistance.toFixed(2)} km
                     </div>
                     <p className="text-xs text-blue-100 mt-1">
-                      {historyData.statistics.pointCount} pontos registrados
+                      {displayStats?.pointCount} pontos registrados
                     </p>
                   </CardContent>
                 </Card>
@@ -375,10 +485,10 @@ export default function HistoricoPage() {
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <div className="text-3xl font-bold">
-                      {Math.floor(historyData.statistics.totalTime / 60)}h {historyData.statistics.totalTime % 60}m
+                      {Math.floor((displayStats?.totalTime || 0) / 60)}h {Math.round((displayStats?.totalTime || 0) % 60)}m
                     </div>
                     <p className="text-xs text-purple-100 mt-1">
-                      {historyData.statistics.totalTime} minutos
+                      {Math.round(displayStats?.totalTime || 0)} minutos
                     </p>
                   </CardContent>
                 </Card>
@@ -396,9 +506,11 @@ export default function HistoricoPage() {
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <div className="text-3xl font-bold">
-                      {historyData.statistics.avgSpeed.toFixed(1)} km/h
+                      {displayStats?.avgSpeed.toFixed(1)} km/h
                     </div>
-                    <p className="text-xs text-green-100 mt-1">Em movimento</p>
+                    <p className="text-xs text-green-100 mt-1">
+                      {isReplayMode ? `Atual: ${displayStats?.currentSpeed?.toFixed(1)} km/h` : 'Em movimento'}
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -415,12 +527,156 @@ export default function HistoricoPage() {
                   </CardHeader>
                   <CardContent className="relative z-10">
                     <div className="text-3xl font-bold">
-                      {historyData.statistics.maxSpeed.toFixed(1)} km/h
+                      {displayStats?.maxSpeed.toFixed(1)} km/h
                     </div>
-                    <p className="text-xs text-orange-100 mt-1">Pico de velocidade</p>
+                    <p className="text-xs text-orange-100 mt-1">
+                      {isReplayMode ? 'Até o momento' : 'Pico de velocidade'}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Controles de Replay */}
+              <Card className="mb-8 border-none shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                  <CardTitle className="flex items-center gap-2">
+                    <Play className="h-5 w-5" />
+                    Controles de Replay
+                  </CardTitle>
+                  <CardDescription className="text-blue-50">
+                    Assista ao movimento da máquina em tempo real
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {!isReplayMode ? (
+                    <div className="text-center py-6">
+                      <Button
+                        onClick={startReplay}
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-600/30"
+                      >
+                        <Play className="h-5 w-5 mr-2" />
+                        Iniciar Replay
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Barra de progresso / Timeline */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm text-gray-600">
+                          <span>
+                            {new Date(historyData.positions[currentReplayIndex].deviceTime).toLocaleTimeString('pt-BR')}
+                          </span>
+                          <span>
+                            {currentReplayIndex + 1} / {historyData.positions.length} pontos
+                          </span>
+                          <span>
+                            {new Date(historyData.positions[historyData.positions.length - 1].deviceTime).toLocaleTimeString('pt-BR')}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max={historyData.positions.length - 1}
+                          value={currentReplayIndex}
+                          onChange={(e) => setCurrentReplayIndex(Number(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Início</span>
+                          <span className="font-semibold text-blue-600">
+                            {((currentReplayIndex / (historyData.positions.length - 1)) * 100).toFixed(0)}%
+                          </span>
+                          <span>Fim</span>
+                        </div>
+                      </div>
+
+                      {/* Controles */}
+                      <div className="flex flex-wrap items-center justify-center gap-4">
+                        {/* Play/Pause */}
+                        <Button
+                          onClick={togglePlayPause}
+                          size="lg"
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+                        >
+                          {isPlaying ? (
+                            <>
+                              <Pause className="h-5 w-5 mr-2" />
+                              Pausar
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-5 w-5 mr-2" />
+                              Reproduzir
+                            </>
+                          )}
+                        </Button>
+
+                        {/* Reset */}
+                        <Button
+                          onClick={resetReplay}
+                          variant="outline"
+                          size="lg"
+                        >
+                          <RotateCcw className="h-5 w-5 mr-2" />
+                          Reiniciar
+                        </Button>
+
+                        {/* Sair do modo replay */}
+                        <Button
+                          onClick={exitReplay}
+                          variant="outline"
+                          size="lg"
+                        >
+                          Sair do Replay
+                        </Button>
+
+                        {/* Seletor de velocidade */}
+                        <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg">
+                          <span className="text-sm font-medium text-gray-700">Velocidade:</span>
+                          <div className="flex gap-1">
+                            {[1, 2, 4, 8].map((speed) => (
+                              <button
+                                key={speed}
+                                onClick={() => setPlaybackSpeed(speed)}
+                                className={`px-3 py-1 rounded text-sm font-semibold transition-all ${
+                                  playbackSpeed === speed
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                {speed}x
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info atual */}
+                      <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600">Tempo Atual</p>
+                          <p className="text-lg font-bold text-blue-700">
+                            {new Date(historyData.positions[currentReplayIndex].deviceTime).toLocaleTimeString('pt-BR')}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600">Distância Percorrida</p>
+                          <p className="text-lg font-bold text-blue-700">
+                            {displayStats?.totalDistance.toFixed(2)} km
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-gray-600">Velocidade</p>
+                          <p className="text-lg font-bold text-blue-700">
+                            {historyData.positions[currentReplayIndex].speed.toFixed(1)} km/h
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Mapa */}
               <Card className="mb-8 border-none shadow-lg overflow-hidden">
@@ -437,6 +693,9 @@ export default function HistoricoPage() {
                   <HistoryMap
                     positions={historyData.positions}
                     deviceName={selectedDeviceName}
+                    replayMode={isReplayMode}
+                    currentReplayIndex={currentReplayIndex}
+                    speedConfig={historyData.speedConfig}
                   />
                 </CardContent>
               </Card>
@@ -447,29 +706,45 @@ export default function HistoricoPage() {
                   <CardTitle className="text-lg">Legenda de Cores</CardTitle>
                   <CardDescription>
                     As cores da rota representam diferentes velocidades
+                    {historyData.speedConfig && ' (personalizadas para este equipamento)'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="h-8 w-8 rounded-full bg-blue-600"></div>
+                      <div>
+                        <p className="font-semibold text-gray-900">Baixa</p>
+                        <p className="text-sm text-gray-600">
+                          ≤ {historyData.speedConfig?.low || 8} km/h
+                        </p>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
                       <div className="h-8 w-8 rounded-full bg-green-600"></div>
                       <div>
-                        <p className="font-semibold text-gray-900">Parado/Lento</p>
-                        <p className="text-sm text-gray-600">0 - 5 km/h</p>
+                        <p className="font-semibold text-gray-900">Ideal</p>
+                        <p className="text-sm text-gray-600">
+                          {historyData.speedConfig?.low || 8} - {historyData.speedConfig?.ideal || 18} km/h
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
                       <div className="h-8 w-8 rounded-full bg-yellow-500"></div>
                       <div>
-                        <p className="font-semibold text-gray-900">Moderado</p>
-                        <p className="text-sm text-gray-600">5 - 15 km/h</p>
+                        <p className="font-semibold text-gray-900">Alta</p>
+                        <p className="text-sm text-gray-600">
+                          {historyData.speedConfig?.ideal || 18} - {historyData.speedConfig?.high || 30} km/h
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg border border-red-200">
                       <div className="h-8 w-8 rounded-full bg-red-600"></div>
                       <div>
-                        <p className="font-semibold text-gray-900">Rápido</p>
-                        <p className="text-sm text-gray-600">&gt; 15 km/h</p>
+                        <p className="font-semibold text-gray-900">Excesso</p>
+                        <p className="text-sm text-gray-600">
+                          &gt; {historyData.speedConfig?.high || 30} km/h
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Header from '@/components/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Check, Loader2, Sparkles } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, Edit } from 'lucide-react'
 import MachineIcon, { MACHINE_ICONS } from '@/components/machine-icon'
 import ImageUpload from '@/components/image-upload'
 
@@ -36,8 +36,12 @@ const ICON_CATEGORIES = {
 type FormSection = 'basico' | 'aparencia' | 'detalhes'
 type DeviceType = 'veiculo' | 'animal' | 'equipamento' | 'outro'
 
-export default function NovoRastreadorPage() {
+export default function EditarRastreadorPage() {
   const router = useRouter()
+  const params = useParams()
+  const deviceId = params.id as string
+
+  const [loading, setLoading] = useState(true)
   const [currentSection, setCurrentSection] = useState<FormSection>('basico')
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -50,7 +54,7 @@ export default function NovoRastreadorPage() {
 
   // Aparência
   const [icone, setIcone] = useState('trator')
-  const [cor, setCor] = useState('#10b981') // verde padrão
+  const [cor, setCor] = useState('#10b981')
   const [foto, setFoto] = useState('')
   const [photoTab, setPhotoTab] = useState<'upload' | 'url'>('upload')
 
@@ -76,6 +80,66 @@ export default function NovoRastreadorPage() {
 
   // Validações
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Buscar dados do dispositivo ao carregar
+  useEffect(() => {
+    async function fetchDevice() {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/devices/${deviceId}`)
+        const result = await response.json()
+
+        if (result.success && result.device) {
+          const device = result.device
+          const metadata = device.metadata
+
+          // Preencher dados básicos
+          setNome(device.name || '')
+          setImei(device.uniqueId || '')
+          setTelefone(device.phone || '')
+          setDescricao(metadata?.descricao || '')
+
+          // Preencher aparência
+          setIcone(metadata?.icone || 'trator')
+          setCor(metadata?.cor || '#10b981')
+          setFoto(metadata?.foto || '')
+
+          // Preencher detalhes
+          setTipo(metadata?.tipo || 'veiculo')
+          setPlaca(metadata?.placa || '')
+          setMarca(metadata?.marca || '')
+          setModelo(metadata?.modelo || device.model || '')
+          setAno(metadata?.ano || '')
+          setRaca(metadata?.raca || '')
+          setIdade(metadata?.idade || '')
+          setPeso(metadata?.peso || '')
+          setNumeroSerie(metadata?.numero_serie || '')
+          setFornecedor(metadata?.fornecedor || '')
+
+          // Preencher velocidades
+          const speedConfig = device.attributes?.speedConfig
+          if (speedConfig) {
+            setSpeedLow(speedConfig.low || 8)
+            setSpeedIdeal(speedConfig.ideal || 18)
+            setSpeedHigh(speedConfig.high || 30)
+          }
+
+          // Preencher status de pagamento
+          setPaymentStatus(device.attributes?.paymentStatus || 'active')
+        } else {
+          setErrors({ fetch: 'Dispositivo não encontrado' })
+        }
+      } catch (error: any) {
+        setErrors({ fetch: error.message || 'Erro ao buscar dispositivo' })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (deviceId) {
+      fetchDevice()
+    }
+  }, [deviceId])
 
   const validateIMEI = (value: string) => {
     const cleaned = value.replace(/\D/g, '')
@@ -116,7 +180,6 @@ export default function NovoRastreadorPage() {
   }
 
   const setDefaultSpeeds = () => {
-    // Definir valores padrão baseado no ícone selecionado
     if (icone === 'trator') {
       setSpeedLow(8)
       setSpeedIdeal(18)
@@ -134,7 +197,6 @@ export default function NovoRastreadorPage() {
       setSpeedIdeal(80)
       setSpeedHigh(120)
     } else {
-      // Padrão genérico
       setSpeedLow(8)
       setSpeedIdeal(18)
       setSpeedHigh(30)
@@ -144,7 +206,6 @@ export default function NovoRastreadorPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validação básica
     if (!nome.trim()) {
       setErrors({ nome: 'Nome é obrigatório' })
       setCurrentSection('basico')
@@ -175,16 +236,13 @@ export default function NovoRastreadorPage() {
     setSaving(true)
 
     try {
-      const response = await fetch('/api/devices/create', {
-        method: 'POST',
+      const response = await fetch(`/api/devices/${deviceId}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          // Dados básicos para o Traccar
           name: nome,
           uniqueId: imei,
           phone: telefone,
-
-          // Metadados para o Supabase
           metadata: {
             descricao,
             icone,
@@ -218,13 +276,48 @@ export default function NovoRastreadorPage() {
           router.push('/')
         }, 2000)
       } else {
-        setErrors({ submit: result.error || 'Erro ao salvar rastreador' })
+        setErrors({ submit: result.error || 'Erro ao atualizar rastreador' })
       }
     } catch (error: any) {
       setErrors({ submit: error.message || 'Erro ao conectar com o servidor' })
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-green-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Carregando dados do rastreador...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (errors.fetch) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-red-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+            <svg className="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Erro ao carregar rastreador
+          </h2>
+          <p className="text-gray-600 mb-6">{errors.fetch}</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg"
+          >
+            Voltar ao Dashboard
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (success) {
@@ -235,10 +328,10 @@ export default function NovoRastreadorPage() {
             <Check className="h-10 w-10 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Rastreador adicionado!
+            Rastreador atualizado!
           </h2>
           <p className="text-gray-600 mb-4">
-            {nome} foi cadastrado com sucesso
+            {nome} foi atualizado com sucesso
           </p>
           <div className="mb-4 flex justify-center">
             <MachineIcon name={icone} size={80} />
@@ -266,15 +359,15 @@ export default function NovoRastreadorPage() {
               Voltar ao Dashboard
             </button>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/30">
-                <Sparkles className="h-6 w-6 text-white" />
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
+                <Edit className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Adicionar Novo Rastreador
+                  Editar Rastreador
                 </h1>
                 <p className="text-gray-600">
-                  Configure um novo dispositivo GPS no AgroTrack
+                  Atualize as informações do dispositivo GPS
                 </p>
               </div>
             </div>
@@ -286,8 +379,8 @@ export default function NovoRastreadorPage() {
               onClick={() => setCurrentSection('basico')}
               className={`px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 currentSection === 'basico'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-600/30'
-                  : 'bg-white text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'bg-white text-gray-600 hover:text-blue-600 hover:bg-blue-50'
               }`}
             >
               📝 Informações Básicas
@@ -296,8 +389,8 @@ export default function NovoRastreadorPage() {
               onClick={() => setCurrentSection('aparencia')}
               className={`px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 currentSection === 'aparencia'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-600/30'
-                  : 'bg-white text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'bg-white text-gray-600 hover:text-blue-600 hover:bg-blue-50'
               }`}
             >
               🎨 Aparência
@@ -306,8 +399,8 @@ export default function NovoRastreadorPage() {
               onClick={() => setCurrentSection('detalhes')}
               className={`px-6 py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 currentSection === 'detalhes'
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-600/30'
-                  : 'bg-white text-gray-600 hover:text-green-600 hover:bg-green-50'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30'
+                  : 'bg-white text-gray-600 hover:text-blue-600 hover:bg-blue-50'
               }`}
             >
               📋 Detalhes Específicos
@@ -318,7 +411,7 @@ export default function NovoRastreadorPage() {
             {/* Seção 1: Informações Básicas */}
             {currentSection === 'basico' && (
               <Card className="border-none shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
                   <CardTitle>Informações Básicas</CardTitle>
                   <CardDescription>
                     Dados essenciais do rastreador GPS
@@ -333,7 +426,7 @@ export default function NovoRastreadorPage() {
                       type="text"
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                         errors.nome ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Ex: Trator John Deere 01"
@@ -350,7 +443,7 @@ export default function NovoRastreadorPage() {
                     <textarea
                       value={descricao}
                       onChange={(e) => setDescricao(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                       placeholder="Ex: Trator usado para plantio de soja"
                       rows={3}
                     />
@@ -369,7 +462,7 @@ export default function NovoRastreadorPage() {
                         if (value.length === 15) validateIMEI(value)
                       }}
                       maxLength={15}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono ${
                         errors.imei ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Digite os 15 dígitos do IMEI"
@@ -390,7 +483,7 @@ export default function NovoRastreadorPage() {
                       type="text"
                       value={telefone}
                       onChange={(e) => setTelefone(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Ex: +55 11 98765-4321"
                     />
                   </div>
@@ -398,7 +491,7 @@ export default function NovoRastreadorPage() {
                   <button
                     type="button"
                     onClick={() => setCurrentSection('aparencia')}
-                    className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30"
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-600/30"
                   >
                     Próximo: Aparência →
                   </button>
@@ -409,7 +502,7 @@ export default function NovoRastreadorPage() {
             {/* Seção 2: Aparência */}
             {currentSection === 'aparencia' && (
               <Card className="border-none shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
                   <CardTitle>Personalização Visual</CardTitle>
                   <CardDescription>
                     Escolha como o rastreador será exibido no sistema
@@ -417,12 +510,11 @@ export default function NovoRastreadorPage() {
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
                   {/* Preview */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
                     <p className="text-sm font-medium text-gray-700 mb-3 text-center">
                       Preview
                     </p>
                     <div className="flex items-center justify-center gap-4">
-                      {/* Ícone ou Foto */}
                       {foto ? (
                         <div className="relative h-20 w-20 rounded-xl overflow-hidden shadow-lg border-2 border-white">
                           <img
@@ -473,8 +565,8 @@ export default function NovoRastreadorPage() {
                                 onClick={() => setIcone(icon)}
                                 className={`h-12 w-12 rounded-lg flex items-center justify-center transition-all hover:scale-110 ${
                                   icone === icon
-                                    ? 'bg-green-600 shadow-lg ring-2 ring-green-600 ring-offset-2'
-                                    : 'bg-white hover:bg-green-50 border border-gray-200'
+                                    ? 'bg-blue-600 shadow-lg ring-2 ring-blue-600 ring-offset-2'
+                                    : 'bg-white hover:bg-blue-50 border border-gray-200'
                                 }`}
                               >
                                 <MachineIcon
@@ -505,7 +597,7 @@ export default function NovoRastreadorPage() {
                         type="text"
                         value={cor}
                         onChange={(e) => setCor(e.target.value)}
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                         placeholder="#10b981"
                       />
                     </div>
@@ -537,7 +629,7 @@ export default function NovoRastreadorPage() {
                         onClick={() => setPhotoTab('upload')}
                         className={`px-4 py-2 font-medium transition-all ${
                           photoTab === 'upload'
-                            ? 'text-green-600 border-b-2 border-green-600'
+                            ? 'text-blue-600 border-b-2 border-blue-600'
                             : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >
@@ -548,7 +640,7 @@ export default function NovoRastreadorPage() {
                         onClick={() => setPhotoTab('url')}
                         className={`px-4 py-2 font-medium transition-all ${
                           photoTab === 'url'
-                            ? 'text-green-600 border-b-2 border-green-600'
+                            ? 'text-blue-600 border-b-2 border-blue-600'
                             : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >
@@ -567,7 +659,7 @@ export default function NovoRastreadorPage() {
                         type="url"
                         value={foto}
                         onChange={(e) => setFoto(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="https://exemplo.com/foto.jpg"
                       />
                     )}
@@ -584,7 +676,7 @@ export default function NovoRastreadorPage() {
                     <button
                       type="button"
                       onClick={() => setCurrentSection('detalhes')}
-                      className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30"
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-600/30"
                     >
                       Próximo: Detalhes →
                     </button>
@@ -596,7 +688,7 @@ export default function NovoRastreadorPage() {
             {/* Seção 3: Detalhes */}
             {currentSection === 'detalhes' && (
               <Card className="border-none shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50/50 border-b">
                   <CardTitle>Detalhes Específicos</CardTitle>
                   <CardDescription>
                     Informações adicionais baseadas no tipo de rastreador
@@ -621,8 +713,8 @@ export default function NovoRastreadorPage() {
                           onClick={() => setTipo(option.value as DeviceType)}
                           className={`p-4 rounded-lg border-2 transition-all ${
                             tipo === option.value
-                              ? 'border-green-600 bg-green-50'
-                              : 'border-gray-200 hover:border-green-300'
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-200 hover:border-blue-300'
                           }`}
                         >
                           <div className="text-3xl mb-2">{option.icon}</div>
@@ -651,7 +743,7 @@ export default function NovoRastreadorPage() {
                               setPlaca(value)
                               if (value) validatePlaca(value)
                             }}
-                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                               errors.placa ? 'border-red-500' : 'border-gray-300'
                             }`}
                             placeholder="ABC-1234"
@@ -668,7 +760,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={marca}
                             onChange={(e) => setMarca(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: John Deere"
                           />
                         </div>
@@ -680,7 +772,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={modelo}
                             onChange={(e) => setModelo(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: 5075E"
                           />
                         </div>
@@ -693,7 +785,7 @@ export default function NovoRastreadorPage() {
                             value={ano}
                             onChange={(e) => setAno(e.target.value.replace(/\D/g, ''))}
                             maxLength={4}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="2024"
                           />
                         </div>
@@ -716,7 +808,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={raca}
                             onChange={(e) => setRaca(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: Nelore"
                           />
                         </div>
@@ -728,7 +820,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={idade}
                             onChange={(e) => setIdade(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: 3 anos"
                           />
                         </div>
@@ -740,7 +832,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={peso}
                             onChange={(e) => setPeso(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: 450 kg"
                           />
                         </div>
@@ -763,7 +855,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={numeroSerie}
                             onChange={(e) => setNumeroSerie(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: SN123456789"
                           />
                         </div>
@@ -775,7 +867,7 @@ export default function NovoRastreadorPage() {
                             type="text"
                             value={fornecedor}
                             onChange={(e) => setFornecedor(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Ex: AgriTech Solutions"
                           />
                         </div>
@@ -966,7 +1058,7 @@ export default function NovoRastreadorPage() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {saving ? (
                         <>
@@ -976,7 +1068,7 @@ export default function NovoRastreadorPage() {
                       ) : (
                         <>
                           <Check className="h-5 w-5" />
-                          Salvar Rastreador
+                          Atualizar Rastreador
                         </>
                       )}
                     </button>

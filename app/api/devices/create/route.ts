@@ -32,7 +32,11 @@ export async function POST(request: Request) {
       uniqueId,
       phone: phone || undefined,
       category: 'default',
-      model: metadata?.modelo || undefined
+      model: metadata?.modelo || undefined,
+      attributes: {
+        speedConfig: metadata?.speedConfig || { low: 8, ideal: 18, high: 30 },
+        paymentStatus: metadata?.paymentStatus || 'active'
+      }
     }
 
     const traccarResponse = await axios.post(

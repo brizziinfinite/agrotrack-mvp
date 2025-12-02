@@ -33,59 +33,38 @@ export async function GET(request: Request) {
       'Accept': 'application/json'
     }
 
+    // Buscar informações do device para pegar speedConfig
+    const deviceUrl = `${TRACCAR_URL}/api/devices?id=${deviceId}`
+    const deviceResponse = await axios.get(deviceUrl, { headers })
+    const device = deviceResponse.data[0]
+    const speedConfig = device?.attributes?.speedConfig || { low: 8, ideal: 18, high: 30 }
+
+    console.log('⚡ SpeedConfig do device:', speedConfig)
+
     // Buscar posições históricas
-    const url = `${TRACCAR_URL}/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`
-    const response = await axios.get(url, { headers })
-    const positions = response.data
+    const positionsUrl = `${TRACCAR_URL}/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`
+    const positionsResponse = await axios.get(positionsUrl, { headers })
+    const positions = positionsResponse.data
 
     console.log(`✅ Encontradas ${positions.length} posições no histórico`)
 
-    // Calcular estatísticas
-    let totalDistance = 0
+    // NOVA PARTE: Buscar estatísticas da API de Reports do Traccar
+    const summaryUrl = `${TRACCAR_URL}/api/reports/summary?deviceId=${deviceId}&from=${from}&to=${to}`
+    const summaryResponse = await axios.get(summaryUrl, { headers })
+    const summary = summaryResponse.data[0] // Primeiro item do array
+
+    // Usar estatísticas do próprio Traccar (mais precisas!)
+    const totalDistance = summary?.distance ? summary.distance / 1000 : 0 // metros para km
+    const maxSpeed = summary?.maxSpeed || 0
+    const avgSpeed = summary?.averageSpeed || 0
+
+    // Calcular tempo total
     let totalTime = 0
-    let maxSpeed = 0
-    let speedSum = 0
-    let speedCount = 0
-
     if (positions.length > 1) {
-      // Ordenar por data
-      positions.sort((a: any, b: any) =>
-        new Date(a.deviceTime).getTime() - new Date(b.deviceTime).getTime()
-      )
-
-      // Calcular distância total usando fórmula de Haversine
-      for (let i = 1; i < positions.length; i++) {
-        const prev = positions[i - 1]
-        const curr = positions[i]
-
-        const distance = calculateDistance(
-          prev.latitude,
-          prev.longitude,
-          curr.latitude,
-          curr.longitude
-        )
-
-        totalDistance += distance
-
-        // Velocidade máxima
-        if (curr.speed > maxSpeed) {
-          maxSpeed = curr.speed
-        }
-
-        // Média de velocidade (apenas quando em movimento)
-        if (curr.speed > 0) {
-          speedSum += curr.speed
-          speedCount++
-        }
-      }
-
-      // Tempo total
       const firstTime = new Date(positions[0].deviceTime).getTime()
       const lastTime = new Date(positions[positions.length - 1].deviceTime).getTime()
       totalTime = (lastTime - firstTime) / 1000 / 60 // em minutos
     }
-
-    const avgSpeed = speedCount > 0 ? speedSum / speedCount : 0
 
     return NextResponse.json({
       success: true,
@@ -97,7 +76,8 @@ export async function GET(request: Request) {
           avgSpeed: Math.round(avgSpeed * 100) / 100, // km/h
           maxSpeed: Math.round(maxSpeed * 100) / 100, // km/h
           pointCount: positions.length
-        }
+        },
+        speedConfig
       }
     })
 
@@ -112,25 +92,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-}
-
-// Função para calcular distância entre dois pontos (Haversine)
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Raio da Terra em km
-  const dLat = toRad(lat2 - lat1)
-  const dLon = toRad(lon2 - lon1)
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2)
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const distance = R * c
-
-  return distance
-}
-
-function toRad(value: number): number {
-  return value * Math.PI / 180
 }
