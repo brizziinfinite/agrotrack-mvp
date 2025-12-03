@@ -1,3 +1,5 @@
+/* ARQUIVO 100% CORRIGIDO — COLE TUDO */
+
 import axios from 'axios'
 
 const TRACCAR_URL = process.env.NEXT_PUBLIC_TRACCAR_URL!
@@ -10,13 +12,14 @@ const auth = Buffer.from(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`).toString('base6
 export const traccarClient = axios.create({
   baseURL: TRACCAR_URL,
   headers: {
-    'Authorization': `Basic ${auth}`,
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-  }
+    Authorization: `Basic ${auth}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
 })
 
-// Tipos TypeScript
+// Tipos TypeScript -----------------------------
+
 export interface TraccarDevice {
   id: number
   name: string
@@ -51,13 +54,14 @@ export interface TraccarPosition {
     motion?: boolean
     ignition?: boolean
     hours?: number
-    [key: string]: any
+    [key: string]: unknown   // <<< CORRIGIDO — sem ANY
   }
 }
 
-// Funções helper
+// Funções helper -----------------------------
+
 export async function getDevices(): Promise<TraccarDevice[]> {
-  const response = await traccarClient.get('/api/devices')
+  const response = await traccarClient.get<TraccarDevice[]>('/api/devices')
   return response.data
 }
 
@@ -66,16 +70,21 @@ export async function getPositions(deviceIds?: number[]): Promise<TraccarPositio
   if (deviceIds && deviceIds.length > 0) {
     url += `?deviceId=${deviceIds.join(',')}`
   }
-  const response = await traccarClient.get(url)
+
+  const response = await traccarClient.get<TraccarPosition[]>(url)
   return response.data
 }
 
 export async function getDevicePosition(deviceId: number): Promise<TraccarPosition | null> {
   try {
     const positions = await getPositions([deviceId])
-    return positions[0] || null
-  } catch (error) {
-    console.error('Error fetching device position:', error)
+    return positions[0] ?? null
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error('Error fetching device position:', err.message)
+    } else {
+      console.error('Unknown error fetching device position')
+    }
     return null
   }
 }

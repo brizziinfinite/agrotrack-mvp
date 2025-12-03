@@ -1,11 +1,21 @@
+/* ARQUIVO INTEIRO CORRIGIDO — COLE TUDO */
+
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import Header from '@/components/header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp } from 'lucide-react'
+import { Tractor, Navigation, AlertCircle, MapPin } from 'lucide-react'
 import './leaflet.css'
 
 // Importar Map dinamicamente (client-side only)
@@ -15,20 +25,22 @@ const Map = dynamic(() => import('@/components/map'), {
     <div className="h-[500px] w-full rounded-lg border bg-gray-100 flex items-center justify-center">
       <p className="text-gray-600">Carregando mapa...</p>
     </div>
-  )
+  ),
 })
+
+interface DevicePosition {
+  latitude: number
+  longitude: number
+  speed: number
+  deviceTime: string
+  attributes: Record<string, unknown>
+}
 
 interface Device {
   id: number
   name: string
   status: string
-  position: {
-    latitude: number
-    longitude: number
-    speed: number
-    deviceTime: string
-    attributes: any
-  } | null
+  position: DevicePosition | null
 }
 
 export default function DashboardPage() {
@@ -46,15 +58,19 @@ export default function DashboardPage() {
     try {
       const response = await fetch('/api/traccar/devices')
       const result = await response.json()
-      
+
       if (result.success) {
-        setDevices(result.data)
+        setDevices(result.data as Device[])
         setError(null)
       } else {
-        setError(result.error)
+        setError(result.error ?? 'Erro ao buscar dispositivos')
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError('Erro desconhecido ao carregar dispositivos')
+      }
     } finally {
       setLoading(false)
     }
@@ -94,156 +110,169 @@ export default function DashboardPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_20%_20%,#ecfdf3_0,#f7fbf8_35%,#f7fbf8_100%)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
           {/* Page Title */}
-          <div id="dashboard" className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <div id="dashboard" className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
+              Visão geral
+            </span>
+            <h2 className="text-3xl font-semibold text-slate-900">
               Dashboard de Monitoramento
             </h2>
-            <p className="text-gray-600">
-              Acompanhe suas máquinas em tempo real
+            <p className="text-sm text-slate-600">
+              Acompanhe em tempo real o status e as rotas das suas máquinas.
             </p>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {/* Card Total Máquinas */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-blue-50">
-                  Total Máquinas
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Tractor className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{devices.length}</div>
-                <p className="text-xs text-blue-100 mt-1">Equipamentos cadastrados</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Online */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-green-50">
-                  Online
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Navigation className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{onlineDevices}</div>
-                <p className="text-xs text-green-100 mt-1">Máquinas ativas</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Offline */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-gray-500 to-gray-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-gray-50">
-                  Offline
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <AlertCircle className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{offlineDevices}</div>
-                <p className="text-xs text-gray-100 mt-1">Máquinas inativas</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Com GPS */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-purple-50">
-                  Com GPS
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{devicesWithPosition}</div>
-                <p className="text-xs text-purple-100 mt-1">Com localização ativa</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[
+              {
+                title: 'Total de máquinas',
+                value: devices.length,
+                icon: <Tractor className="h-5 w-5 text-emerald-700" />,
+                tone: 'bg-emerald-50 text-emerald-700',
+                hint: 'Cadastradas no Traccar',
+              },
+              {
+                title: 'Online',
+                value: onlineDevices,
+                icon: <Navigation className="h-5 w-5 text-green-700" />,
+                tone: 'bg-green-50 text-green-700',
+                hint: 'Máquinas ativas',
+              },
+              {
+                title: 'Offline',
+                value: offlineDevices,
+                icon: <AlertCircle className="h-5 w-5 text-amber-700" />,
+                tone: 'bg-amber-50 text-amber-700',
+                hint: 'Sem transmissão',
+              },
+              {
+                title: 'Com localização',
+                value: devicesWithPosition,
+                icon: <MapPin className="h-5 w-5 text-sky-700" />,
+                tone: 'bg-sky-50 text-sky-700',
+                hint: 'Posição atualizada',
+              },
+            ].map((item, idx) => (
+              <Card
+                key={idx}
+                className="border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+              >
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-slate-700">
+                    {item.title}
+                  </CardTitle>
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${item.tone}`}>
+                    {item.icon}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold text-slate-900">{item.value}</div>
+                  <p className="text-xs text-slate-500 mt-1">{item.hint}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* Mapa */}
-          <Card id="mapa" className="mb-8 border-none shadow-lg overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Localização em Tempo Real
-              </CardTitle>
-              <CardDescription className="text-green-50">
-                Posição GPS das máquinas na Fazenda Santa Inês
-              </CardDescription>
+          <Card id="mapa" className="border border-slate-100 shadow-md overflow-hidden">
+            <CardHeader className="bg-white border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <MapPin className="h-5 w-5 text-emerald-700" />
+                    Localização em Tempo Real
+                  </CardTitle>
+                  <CardDescription>Posição GPS das máquinas na fazenda.</CardDescription>
+                </div>
+                <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Tempo real
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <Map devices={devices} />
             </CardContent>
           </Card>
 
+          {/* CTA Histórico */}
+          <Card className="border border-slate-100 shadow-sm">
+            <CardContent className="py-5 px-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
+                  Rotas e relatórios
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">Histórico de trajetos</h3>
+                <p className="text-sm text-slate-600">
+                  Consulte rotas, estatísticas de distância, velocidades e exporte CSV/GPX.
+                </p>
+              </div>
+              <Button asChild className="px-5">
+                <Link href="/historico">Abrir Histórico</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Devices List */}
-          <Card id="maquinas" className="border-none shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Tractor className="h-5 w-5 text-green-600" />
-                Máquinas Cadastradas
+          <Card id="maquinas" className="border border-slate-100 shadow-md">
+            <CardHeader className="border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2 text-slate-900">
+                <Tractor className="h-5 w-5 text-emerald-700" />
+                Máquinas cadastradas
               </CardTitle>
-              <CardDescription>
-                Lista de todos os rastreadores SL48 configurados
-              </CardDescription>
+              <CardDescription>Lista de rastreadores e status de telemetria.</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-3">
-                {devices.map((device) => (
+                {devices.map(device => (
                   <div
                     key={device.id}
-                    className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group"
+                    className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between p-4 border border-slate-100 rounded-xl bg-white hover:border-emerald-200 hover:shadow-sm transition-all duration-200"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:from-green-200 group-hover:to-emerald-200 transition-all duration-300">
-                        <Tractor className="h-6 w-6 text-green-700" />
+                      <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
+                        <Tractor className="h-6 w-6" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-900">{device.name}</h3>
-                        <p className="text-sm text-gray-500">ID: {device.id}</p>
+                        <h3 className="font-semibold text-slate-900">
+                          {device.name}
+                        </h3>
+                        <p className="text-sm text-slate-500">ID: {device.id}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6">
                       {device.position && (
                         <>
-                          <div className="text-right hidden md:block">
-                            <p className="text-xs text-gray-500 font-medium">Velocidade</p>
-                            <p className="font-bold text-gray-900">
+                          <div className="text-left md:text-right">
+                            <p className="text-xs text-slate-500 font-medium">
+                              Velocidade
+                            </p>
+                            <p className="font-semibold text-slate-900">
                               {Math.round(device.position.speed)} km/h
                             </p>
                           </div>
-                          <div className="text-right hidden lg:block">
-                            <p className="text-xs text-gray-500 font-medium">Última atualização</p>
-                            <p className="font-semibold text-xs text-gray-700">
-                              {new Date(device.position.deviceTime).toLocaleString('pt-BR')}
+                          <div className="text-left md:text-right min-w-[160px]">
+                            <p className="text-xs text-slate-500 font-medium">
+                              Última atualização
+                            </p>
+                            <p className="font-semibold text-xs text-slate-700">
+                              {new Date(
+                                device.position.deviceTime,
+                              ).toLocaleString('pt-BR')}
                             </p>
                           </div>
                         </>
                       )}
                       <Badge
-                        variant={device.status === 'online' ? 'default' : 'secondary'}
+                        variant="outline"
                         className={
                           device.status === 'online'
-                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-md shadow-green-600/30'
-                            : 'bg-gray-400'
+                            ? 'border-green-200 bg-emerald-50 text-emerald-700'
+                            : 'border-slate-200 bg-slate-50 text-slate-600'
                         }
                       >
                         {device.status === 'online' ? 'Online' : 'Offline'}
@@ -253,11 +282,13 @@ export default function DashboardPage() {
                 ))}
 
                 {devices.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <div className="text-center py-12 text-slate-500">
+                    <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
                       <Tractor className="h-8 w-8 opacity-50" />
                     </div>
-                    <p className="font-medium">Nenhuma máquina cadastrada ainda.</p>
+                    <p className="font-medium">
+                      Nenhuma máquina cadastrada ainda.
+                    </p>
                     <p className="text-sm mt-2">
                       Configure os rastreadores SL48 no Traccar.
                     </p>

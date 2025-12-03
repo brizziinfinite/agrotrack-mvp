@@ -1,65 +1,104 @@
+/* ARQUIVO 100% CORRIGIDO — COLE TUDO */
+
 import { NextResponse } from 'next/server'
 import axios from 'axios'
+
+interface TraccarDevice {
+  id: number
+  name: string
+  uniqueId?: string
+  status?: string
+  lastUpdate?: string
+}
+
+interface TraccarPosition {
+  id: number
+  deviceId: number
+  deviceTime: string
+  fixTime: string
+  latitude: number
+  longitude: number
+  speed: number
+  attributes: Record<string, unknown>
+}
+
+interface ApiResponse {
+  success: boolean
+  data?: unknown
+  error?: string
+  stack?: string
+}
 
 export async function GET() {
   try {
     const TRACCAR_URL = 'http://178.156.176.177:8082'
     const TRACCAR_EMAIL = 'brizziinfinite@gmail.com'
     const TRACCAR_PASSWORD = 'a202595B'
-    
+
     console.log('🔍 Conectando no Traccar...')
-    
-    // Criar autenticação
+
     const auth = Buffer.from(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`).toString('base64')
-    
+
     const headers = {
-      'Authorization': `Basic ${auth}`,
-      'Accept': 'application/json'
+      Authorization: `Basic ${auth}`,
+      Accept: 'application/json',
     }
-    
+
     // Buscar dispositivos
-    const devicesResponse = await axios.get(`${TRACCAR_URL}/api/devices`, { headers })
+    const devicesResponse = await axios.get<TraccarDevice[]>(`${TRACCAR_URL}/api/devices`, { headers })
     const devices = devicesResponse.data
-    
+
     console.log(`✅ Encontrados ${devices.length} dispositivos`)
-    
+
     // Buscar posições
-    let positions = []
+    let positions: TraccarPosition[] = []
+
     try {
-      const positionsResponse = await axios.get(`${TRACCAR_URL}/api/positions`, { headers })
+      const positionsResponse = await axios.get<TraccarPosition[]>(`${TRACCAR_URL}/api/positions`, { headers })
       positions = positionsResponse.data
       console.log(`✅ Encontradas ${positions.length} posições`)
-    } catch (e) {
+    } catch {
       console.log('⚠️  Sem posições disponíveis')
     }
-    
-    // Combinar dados
-    const positionsMap = new Map(positions.map((p: any) => [p.deviceId, p]))
-    
-    const result = devices.map((device: any) => ({
+
+    // Mapear posições por ID do device
+    const positionsMap = new Map<number, TraccarPosition>(
+      positions.map((p) => [p.deviceId, p])
+    )
+
+    // Construir resposta final
+    const result = devices.map((device) => ({
       id: device.id,
       name: device.name,
       uniqueId: device.uniqueId,
-      status: device.status,
-      lastUpdate: device.lastUpdate,
-      position: positionsMap.get(device.id) || null
+      status: device.status ?? 'unknown',
+      lastUpdate: device.lastUpdate ?? null,
+      position: positionsMap.get(device.id) ?? null,
     }))
-    
-    return NextResponse.json({
+
+    const response: ApiResponse = {
       success: true,
-      data: result
-    })
-    
-  } catch (error: any) {
-    console.error('❌ Erro:', error.message)
-    
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message,
-        stack: error.stack
-      },
-      { status: 500 }
-    )
+      data: result,
+    }
+
+    return NextResponse.json(response)
+  } catch (error) {
+    let message = 'Erro desconhecido'
+    let stack = undefined
+
+    if (error instanceof Error) {
+      message = error.message
+      stack = error.stack
+    }
+
+    console.error('❌ Erro ao acessar Traccar:', message)
+
+    const response: ApiResponse = {
+      success: false,
+      error: message,
+      stack,
+    }
+
+    return NextResponse.json(response, { status: 500 })
   }
 }
