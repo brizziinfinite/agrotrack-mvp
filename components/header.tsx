@@ -1,17 +1,34 @@
 'use client'
 
-import { Tractor, MapPin, Activity, Menu } from 'lucide-react'
+import { Tractor, MapPin, Activity, Menu, History } from 'lucide-react'
 import { useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  const isActive = (path: string) => {
+    if (path === '/' && pathname === '/') return true
+    if (path !== '/' && pathname.startsWith(path)) return true
+    return false
+  }
+
+  const linkClass = (path: string) => {
+    return `flex items-center gap-2 text-sm font-medium transition-colors ${
+      isActive(path)
+        ? 'text-green-600'
+        : 'text-gray-700 hover:text-green-600'
+    }`
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo e Nome */}
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg shadow-green-600/30">
               <Tractor className="h-6 w-6 text-white" />
             </div>
@@ -23,31 +40,22 @@ export default function Header() {
                 Fazenda Santa Inês
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center gap-6">
-            <a
-              href="#dashboard"
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-            >
+            <Link href="/" className={linkClass('/')}>
               <Activity className="h-4 w-4" />
               Dashboard
-            </a>
-            <a
-              href="#mapa"
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-            >
-              <MapPin className="h-4 w-4" />
-              Mapa
-            </a>
-            <a
-              href="#maquinas"
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-            >
+            </Link>
+            <Link href="/maquinas" className={linkClass('/maquinas')}>
               <Tractor className="h-4 w-4" />
               Máquinas
-            </a>
+            </Link>
+            <Link href="/historico" className={linkClass('/historico')}>
+              <History className="h-4 w-4" />
+              Histórico
+            </Link>
           </nav>
 
           {/* Status Badge */}
@@ -69,27 +77,18 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t">
             <nav className="flex flex-col gap-4">
-              <a
-                href="#dashboard"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-              >
+              <Link href="/" className={linkClass('/')} onClick={() => setMobileMenuOpen(false)}>
                 <Activity className="h-4 w-4" />
                 Dashboard
-              </a>
-              <a
-                href="#mapa"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-              >
-                <MapPin className="h-4 w-4" />
-                Mapa
-              </a>
-              <a
-                href="#maquinas"
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-green-600 transition-colors"
-              >
+              </Link>
+              <Link href="/maquinas" className={linkClass('/maquinas')} onClick={() => setMobileMenuOpen(false)}>
                 <Tractor className="h-4 w-4" />
                 Máquinas
-              </a>
+              </Link>
+              <Link href="/historico" className={linkClass('/historico')} onClick={() => setMobileMenuOpen(false)}>
+                <History className="h-4 w-4" />
+                Histórico
+              </Link>
             </nav>
           </div>
         )}
