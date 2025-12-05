@@ -219,21 +219,21 @@ export default function MaquinasPage() {
                       <span className="font-mono text-gray-900">{device.uniqueId}</span>
                     </div>
 
-                    {/* M2M */}
-                    {device.attributes?.m2m && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">M2M:</span>
-                        <span className="font-mono text-gray-900">{device.attributes.m2m}</span>
-                      </div>
-                    )}
-
                     {/* ICCID */}
                     {device.attributes?.iccid && (
                       <div className="flex items-center gap-2 text-sm">
                         <Hash className="h-4 w-4 text-gray-400" />
                         <span className="text-gray-600">ICCID:</span>
                         <span className="font-mono text-gray-900">{device.attributes.iccid}</span>
+                      </div>
+                    )}
+
+                    {/* M2M */}
+                    {device.attributes?.m2m && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-600">M2M:</span>
+                        <span className="font-mono text-gray-900">{device.attributes.m2m}</span>
                       </div>
                     )}
 
