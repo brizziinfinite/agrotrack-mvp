@@ -29,6 +29,7 @@ interface Device {
     m2m?: string
     plate?: string
     color?: string
+    iccid?: string
     speedIdealMax?: number
     speedHighMax?: number
     speedExtremeName?: string
@@ -224,6 +225,15 @@ export default function MaquinasPage() {
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span className="text-gray-600">M2M:</span>
                         <span className="font-mono text-gray-900">{device.attributes.m2m}</span>
+                      </div>
+                    )}
+
+                    {/* ICCID */}
+                    {device.attributes?.iccid && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Hash className="h-4 w-4 text-gray-400" />
+                        <span className="text-gray-600">ICCID:</span>
+                        <span className="font-mono text-gray-900">{device.attributes.iccid}</span>
                       </div>
                     )}
 

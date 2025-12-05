@@ -4,7 +4,7 @@ import { traccarClient } from '@/lib/traccar'
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { id, name, uniqueId, category, model, m2m, plate, color, speedIdealMax, speedHighMax, speedExtremeName } = body
+    const { id, name, uniqueId, category, model, m2m, plate, color, iccid, speedIdealMax, speedHighMax, speedExtremeName } = body
 
     if (!id || !name) {
       return NextResponse.json(
@@ -21,6 +21,7 @@ export async function PUT(request: Request) {
     if (m2m) attributes.m2m = m2m
     if (plate) attributes.plate = plate
     if (color) attributes.color = color
+    if (iccid) attributes.iccid = iccid
     if (speedIdealMax) attributes.speedIdealMax = Number(speedIdealMax)
     if (speedHighMax) attributes.speedHighMax = Number(speedHighMax)
     if (speedExtremeName) attributes.speedExtremeName = speedExtremeName

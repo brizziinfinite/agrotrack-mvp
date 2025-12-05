@@ -24,6 +24,7 @@ export default function NovaMaquinaPage() {
     m2m: '',
     plate: '',
     color: '',
+    iccid: '',
     speedIdealMax: '',
     speedHighMax: '',
     speedExtremeName: 'Extrema'
@@ -209,6 +210,21 @@ export default function NovaMaquinaPage() {
                     onChange={(e) => setFormData({ ...formData, plate: e.target.value.toUpperCase() })}
                     className="w-full"
                     maxLength={8}
+                  />
+                </div>
+
+                {/* ICCID */}
+                <div className="space-y-2">
+                  <Label htmlFor="iccid" className="text-sm font-medium text-gray-700">
+                    ICCID
+                  </Label>
+                  <Input
+                    id="iccid"
+                    type="text"
+                    placeholder="Ex: 8955..."
+                    value={formData.iccid}
+                    onChange={(e) => setFormData({ ...formData, iccid: e.target.value })}
+                    className="w-full"
                   />
                 </div>
 
