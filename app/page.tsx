@@ -166,7 +166,7 @@ export default function DashboardPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_20%_20%,rgba(59,169,255,0.08),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(34,211,238,0.08),transparent_28%),#0a1424] text-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Page Title */}
           <div id="dashboard" className="mb-8">
@@ -182,16 +182,14 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             {statCards.map((card) => (
               <Link key={card.title} href={card.href} className="block group">
-                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 rounded-2xl">
+                <Card className="border border-border/60 bg-card/90 shadow-lg shadow-black/20 hover:shadow-xl transition-all duration-200 group-hover:-translate-y-0.5 rounded-2xl">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${card.bg}`}>
-                      {card.icon}
-                    </div>
-                    <span className="text-xs text-gray-400">Clique para ver</span>
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${card.bg} bg-opacity-20`}> {card.icon}</div>
+                    <span className="text-xs text-muted-foreground">Clique para ver</span>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold text-gray-900">{card.value}</div>
-                    <p className="text-sm text-gray-500 mt-1">{card.title}</p>
+                    <div className="text-3xl font-bold text-foreground">{card.value}</div>
+                    <p className="text-sm text-muted-foreground mt-1">{card.title}</p>
                   </CardContent>
                 </Card>
               </Link>
@@ -199,7 +197,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Donut status */}
-          <Card className="mb-8 border border-gray-100 shadow-sm rounded-2xl">
+          <Card className="mb-8 border border-border/60 bg-card/90 shadow-lg shadow-black/20 rounded-2xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
                 <CardTitle className="text-lg">Resumo de status</CardTitle>
@@ -209,30 +207,30 @@ export default function DashboardPage() {
             <CardContent className="flex flex-col md:flex-row items-center gap-6">
               <div className="relative h-48 w-48 flex items-center justify-center">
                 <div
-                  className="h-44 w-44 rounded-full"
+                  className="h-44 w-44 rounded-full shadow-inner shadow-black/30"
                   style={{
                     background: totalStatus > 0 ? `conic-gradient(${donutStops})` : '#e5e7eb'
                   }}
                 ></div>
-                <div className="absolute h-24 w-24 bg-white rounded-full shadow-inner flex items-center justify-center">
+                <div className="absolute h-24 w-24 bg-background rounded-full shadow-inner flex items-center justify-center border border-border/60">
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">Total</p>
-                    <p className="text-2xl font-bold text-gray-900">{totalStatus}</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-2xl font-bold text-foreground">{totalStatus}</p>
                   </div>
                 </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 w-full max-w-md">
                 {statusSummary.map((item) => (
-                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-secondary">
                     <span
                       className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: item.color }}
                     ></span>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-800">{item.label}</p>
-                      <p className="text-xs text-gray-500">{totalStatus > 0 ? Math.round((item.value / totalStatus) * 100) : 0}%</p>
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{totalStatus > 0 ? Math.round((item.value / totalStatus) * 100) : 0}%</p>
                     </div>
-                    <span className="text-lg font-bold text-gray-900">{item.value}</span>
+                    <span className="text-lg font-bold text-foreground">{item.value}</span>
                   </div>
                 ))}
               </div>

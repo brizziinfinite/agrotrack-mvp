@@ -13,7 +13,7 @@ export default function Header() {
   useEffect(() => {
     const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
     const prefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    const initial = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'light'
+    const initial = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'dark'
     setTheme(initial)
     if (typeof document !== 'undefined') {
       document.documentElement.classList.toggle('dark', initial === 'dark')
@@ -40,25 +40,25 @@ export default function Header() {
   const linkClass = (path: string) => {
     return `flex items-center gap-2 text-sm font-medium transition-colors ${
       isActive(path)
-        ? 'text-green-600'
-        : 'text-gray-700 hover:text-green-600'
+        ? 'text-primary'
+        : 'text-muted-foreground hover:text-primary'
     }`
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo e Nome */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg shadow-green-600/30">
-              <Tractor className="h-6 w-6 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-cyan-400 shadow-lg shadow-primary/30">
+              <Tractor className="h-6 w-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-green-700 to-emerald-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-cyan-300 bg-clip-text text-transparent">
                 AgroTrack
               </h1>
-              <p className="text-xs text-gray-600 hidden sm:block">
+              <p className="text-xs text-muted-foreground hidden sm:block">
                 Fazenda Santa Inês
               </p>
             </div>
