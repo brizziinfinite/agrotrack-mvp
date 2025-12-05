@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
+const PAN_DURATION = 0.45
+const TRAIL_POINTS = 50
+
 interface Position {
   latitude: number
   longitude: number
@@ -14,9 +17,15 @@ interface Position {
 interface HistoryMapProps {
   positions: Position[]
   deviceName: string
+  icon: { emoji: string; color: string }
+  speedRules?: {
+    ideal?: number
+    high?: number
+    extremeName?: string
+  }
 }
 
-export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
+export default function HistoryMap({ positions, deviceName, icon, speedRules }: HistoryMapProps) {
   const mapRef = useRef<L.Map | null>(null)
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -24,6 +33,17 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
   const [playSpeed, setPlaySpeed] = useState(1)
   const markerRef = useRef<L.Marker | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const polylinesRef = useRef<L.Polyline[]>([])
+  const playbackLineRef = useRef<L.Polyline | null>(null)
+  const trailLineRef = useRef<L.Polyline | null>(null)
+
+  const getSpeedColor = (speed: number) => {
+    const ideal = Number(speedRules?.ideal) || 0
+    const high = Number(speedRules?.high) || 0
+    if (ideal && speed <= ideal) return '#16a34a'
+    if (high && speed <= high) return '#eab308'
+    return '#ef4444'
+  }
 
   // Inicializar mapa
   useEffect(() => {
@@ -45,9 +65,53 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
     }
   }, [])
 
-  // Desenhar rota completa
+  // Limpar camadas quando não há posições
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    if (positions.length === 0) {
+      polylinesRef.current.forEach(line => mapRef.current!.removeLayer(line))
+      polylinesRef.current = []
+      if (markerRef.current) {
+        mapRef.current.removeLayer(markerRef.current)
+        markerRef.current = null
+      }
+      if (playbackLineRef.current) {
+        mapRef.current.removeLayer(playbackLineRef.current)
+        playbackLineRef.current = null
+      }
+      if (trailLineRef.current) {
+        mapRef.current.removeLayer(trailLineRef.current)
+        trailLineRef.current = null
+      }
+      setIsPlaying(false)
+      setCurrentIndex(0)
+    }
+  }, [positions.length])
+
+  // Desenhar rota completa (limpando estado anterior)
   useEffect(() => {
     if (!mapRef.current || positions.length === 0) return
+
+    // Reset playback para novo dataset
+    setIsPlaying(false)
+    setCurrentIndex(0)
+
+    // Remover polilinhas e marcador anteriores
+    polylinesRef.current.forEach(line => mapRef.current!.removeLayer(line))
+    polylinesRef.current = []
+    if (markerRef.current) {
+      mapRef.current.removeLayer(markerRef.current)
+      markerRef.current = null
+    }
+    if (playbackLineRef.current) {
+      mapRef.current.removeLayer(playbackLineRef.current)
+      playbackLineRef.current = null
+    }
+    if (trailLineRef.current) {
+      mapRef.current.removeLayer(trailLineRef.current)
+      trailLineRef.current = null
+    }
 
     const coordinates: [number, number][] = positions.map(p => [p.latitude, p.longitude])
 
@@ -56,15 +120,30 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
       const speed = positions[i].speed
       const color = speed < 5 ? '#22c55e' : speed < 15 ? '#eab308' : '#ef4444'
 
-      L.polyline(
+      const line = L.polyline(
         [coordinates[i], coordinates[i + 1]],
-        { color, weight: 4, opacity: 0.7 }
+        { color: getSpeedColor(speed) || color, weight: 3, opacity: 0.8 }
       ).addTo(mapRef.current)
+      polylinesRef.current.push(line)
     }
 
     // Ajustar bounds
     const bounds = L.latLngBounds(coordinates)
     mapRef.current.fitBounds(bounds, { padding: [50, 50] })
+
+    // Linha de progresso do replay
+    playbackLineRef.current = L.polyline([], {
+      color: icon.color,
+      weight: 4,
+      opacity: 0.95
+    }).addTo(mapRef.current)
+
+    // Linha de rastro (ghost) perto do marcador
+    trailLineRef.current = L.polyline([], {
+      color: icon.color,
+      weight: 3,
+      opacity: 0.4
+    }).addTo(mapRef.current)
 
   }, [positions])
 
@@ -93,19 +172,89 @@ export default function HistoryMap({ positions, deviceName }: HistoryMapProps) {
 
     const pos = positions[currentIndex]
     const latlng: [number, number] = [pos.latitude, pos.longitude]
+    const popupHtml = `
+      <div style="min-width: 180px; font-family: 'Inter', sans-serif; color: #111827;">
+        <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">${icon.emoji}</span>
+          <span>${deviceName}</span>
+        </div>
+        <div style="font-size: 13px; margin-bottom: 4px; color: ${getSpeedColor(pos.speed)};">Velocidade: <strong>${pos.speed.toFixed(1)} km/h</strong></div>
+        <div style="font-size: 12px; color: #4b5563;">${new Date(pos.deviceTime).toLocaleString('pt-BR')}</div>
+      </div>
+    `
 
     if (markerRef.current) {
       markerRef.current.setLatLng(latlng)
+      const popup = markerRef.current.getPopup()
+      if (popup) {
+        popup.setContent(popupHtml)
+      } else {
+        markerRef.current.bindPopup(popupHtml)
+      }
     } else {
-      const icon = L.divIcon({
-        html: '<div style="background: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
+      const markerIcon = L.divIcon({
+        html: `
+          <div style="position: relative; width: 28px; height: 40px; display: flex; align-items: center; justify-content: center;">
+            <div style="
+              width: 28px;
+              height: 28px;
+              background: white;
+              border-radius: 14px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+            ">
+              <div style="
+                width: 22px;
+                height: 22px;
+                background: ${icon.color};
+                border-radius: 11px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #fff;
+                font-size: 14px;
+              ">${icon.emoji}</div>
+            </div>
+            <div style="
+              position: absolute;
+              bottom: 0;
+              width: 0;
+              height: 0;
+              border-left: 10px solid transparent;
+              border-right: 10px solid transparent;
+              border-top: 14px solid ${icon.color};
+              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+            "></div>
+          </div>
+        `,
+        iconSize: [28, 40],
+        iconAnchor: [14, 36]
       })
-      markerRef.current = L.marker(latlng, { icon }).addTo(mapRef.current)
+      markerRef.current = L.marker(latlng, { icon: markerIcon }).addTo(mapRef.current)
+      markerRef.current.bindPopup(popupHtml)
     }
 
-    mapRef.current.panTo(latlng)
+    mapRef.current.panTo(latlng, {
+      animate: true,
+      duration: PAN_DURATION,
+      easeLinearity: 0.25
+    })
+
+    // Atualizar linha de progresso
+    if (playbackLineRef.current) {
+      const slice = positions.slice(0, currentIndex + 1).map(p => [p.latitude, p.longitude] as [number, number])
+      playbackLineRef.current.setLatLngs(slice)
+    }
+
+    // Atualizar rastro curto (últimos N pontos)
+    if (trailLineRef.current) {
+      const start = Math.max(0, currentIndex - TRAIL_POINTS)
+      const slice = positions.slice(start, currentIndex + 1).map(p => [p.latitude, p.longitude] as [number, number])
+      trailLineRef.current.setLatLngs(slice)
+    }
   }, [currentIndex, positions])
 
   return (

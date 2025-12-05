@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { getDeviceIcon } from '@/lib/device-icons'
 
 // Ícone customizado de trator para máquinas online
 const tractorIconOnline = L.divIcon({
@@ -102,7 +103,13 @@ const tractorIconOffline = L.divIcon({
 interface Device {
   id: number
   name: string
+  category?: string
   status: string
+  attributes?: {
+    speedIdealMax?: number
+    speedHighMax?: number
+    speedExtremeName?: string
+  }
   position: {
     latitude: number
     longitude: number
@@ -136,6 +143,13 @@ function MapRecenter({ devices }: { devices: Device[] }) {
 }
 
 export default function Map({ devices }: MapProps) {
+  const getSpeedColor = (speed: number, attrs?: Device['attributes']) => {
+    const ideal = Number(attrs?.speedIdealMax) || 0
+    const high = Number(attrs?.speedHighMax) || 0
+    if (ideal && speed <= ideal) return '#16a34a'
+    if (high && speed <= high) return '#eab308'
+    return '#ef4444'
+  }
   // Coordenadas padrão (Cândido Mota, SP)
   const defaultCenter: [number, number] = [-22.7467, -50.3489]
   
@@ -165,7 +179,51 @@ export default function Map({ devices }: MapProps) {
           <Marker
             key={device.id}
             position={[device.position!.latitude, device.position!.longitude]}
-            icon={device.status === 'online' ? tractorIconOnline : tractorIconOffline}
+            icon={(() => {
+              const icon = getDeviceIcon(device.category)
+              const baseHtml = `
+                <div style="
+                  position: relative;
+                  width: 44px;
+                  height: 44px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 22px;
+                ">
+                  <div style="
+                    width: 44px;
+                    height: 44px;
+                    background: linear-gradient(135deg, ${device.status === 'online' ? '#16a34a' : '#6b7280'} 0%, ${device.status === 'online' ? '#059669' : '#4b5563'} 100%);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    border: 3px solid white;
+                    color: ${icon.color};
+                  ">
+                    ${icon.emoji}
+                  </div>
+                  <div style="
+                    position: absolute;
+                    bottom: -8px;
+                    width: 0;
+                    height: 0;
+                    border-left: 8px solid transparent;
+                    border-right: 8px solid transparent;
+                    border-top: 8px solid white;
+                  "></div>
+                </div>
+              `
+              return L.divIcon({
+                className: 'custom-device-icon',
+                html: baseHtml,
+                iconSize: [44, 52],
+                iconAnchor: [22, 52],
+                popupAnchor: [0, -52]
+              })
+            })()}
           >
             <Popup>
               <div className="p-3 min-w-[200px]">
@@ -179,7 +237,10 @@ export default function Map({ devices }: MapProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600">Velocidade:</span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: getSpeedColor(device.position!.speed, device.attributes) }}
+                    >
                       {Math.round(device.position!.speed)} km/h
                     </span>
                   </div>

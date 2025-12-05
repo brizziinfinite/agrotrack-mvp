@@ -5,8 +5,18 @@ import dynamic from 'next/dynamic'
 import Header from '@/components/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp } from 'lucide-react'
+import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp, Wifi, PauseCircle, MoveRight, Smartphone } from 'lucide-react'
 import './leaflet.css'
+import { getDeviceIcon } from '@/lib/device-icons'
+import Link from 'next/link'
+
+function getSpeedColor(speed: number, attrs?: { speedIdealMax?: number; speedHighMax?: number }) {
+  const ideal = Number(attrs?.speedIdealMax) || 0
+  const high = Number(attrs?.speedHighMax) || 0
+  if (ideal && speed <= ideal) return 'text-green-700'
+  if (high && speed <= high) return 'text-amber-700'
+  return 'text-red-700'
+}
 
 // Importar Map dinamicamente (client-side only)
 const Map = dynamic(() => import('@/components/map'), {
@@ -21,13 +31,18 @@ const Map = dynamic(() => import('@/components/map'), {
 interface Device {
   id: number
   name: string
+  category?: string
   status: string
+  attributes?: {
+    speedIdealMax?: number
+    speedHighMax?: number
+    speedExtremeName?: string
+  }
   position: {
     latitude: number
     longitude: number
     speed: number
     deviceTime: string
-    attributes: any
   } | null
 }
 
@@ -63,6 +78,63 @@ export default function DashboardPage() {
   const onlineDevices = devices.filter(d => d.status === 'online').length
   const offlineDevices = devices.filter(d => d.status === 'offline').length
   const devicesWithPosition = devices.filter(d => d.position).length
+  const movingDevices = devices.filter(d => d.position && d.position.speed > 1).length
+  const stoppedDevices = devices.filter(d => d.position && d.position.speed <= 1 && d.status === 'online').length
+
+  const statusSummary = [
+    { label: 'Online', value: onlineDevices, color: '#16a34a' },
+    { label: 'Offline', value: offlineDevices, color: '#6b7280' },
+    { label: 'Em movimento', value: movingDevices, color: '#0ea5e9' },
+    { label: 'Parado', value: stoppedDevices, color: '#f59e0b' }
+  ]
+  const totalStatus = statusSummary.reduce((sum, item) => sum + item.value, 0)
+  let accumulator = 0
+  const donutStops = statusSummary
+    .map((item) => {
+      const start = (accumulator / Math.max(totalStatus, 1)) * 100
+      accumulator += item.value
+      const end = (accumulator / Math.max(totalStatus, 1)) * 100
+      return `${item.color} ${start}% ${end}%`
+    })
+    .join(', ')
+
+  const statCards = [
+    {
+      title: 'Dispositivos',
+      value: devices.length,
+      icon: <Smartphone className="h-5 w-5 text-blue-500" />,
+      bg: 'bg-blue-50',
+      href: '/dispositivos'
+    },
+    {
+      title: 'Online',
+      value: onlineDevices,
+      icon: <Wifi className="h-5 w-5 text-green-600" />,
+      bg: 'bg-green-50',
+      href: '#mapa'
+    },
+    {
+      title: 'Em movimento',
+      value: movingDevices,
+      icon: <MoveRight className="h-5 w-5 text-sky-600" />,
+      bg: 'bg-sky-50',
+      href: '#mapa'
+    },
+    {
+      title: 'Parados',
+      value: stoppedDevices,
+      icon: <PauseCircle className="h-5 w-5 text-amber-500" />,
+      bg: 'bg-amber-50',
+      href: '#mapa'
+    },
+    {
+      title: 'Offline',
+      value: offlineDevices,
+      icon: <AlertCircle className="h-5 w-5 text-gray-500" />,
+      bg: 'bg-gray-50',
+      href: '#mapa'
+    }
+  ]
 
   if (loading) {
     return (
@@ -102,80 +174,70 @@ export default function DashboardPage() {
               Dashboard de Monitoramento
             </h2>
             <p className="text-gray-600">
-              Acompanhe suas máquinas em tempo real
+              Acompanhe seus dispositivos em tempo real
             </p>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {/* Card Total Máquinas */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-blue-50">
-                  Total Máquinas
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Tractor className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{devices.length}</div>
-                <p className="text-xs text-blue-100 mt-1">Equipamentos cadastrados</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Online */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-green-50">
-                  Online
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <Navigation className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{onlineDevices}</div>
-                <p className="text-xs text-green-100 mt-1">Máquinas ativas</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Offline */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-gray-500 to-gray-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-gray-50">
-                  Offline
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <AlertCircle className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{offlineDevices}</div>
-                <p className="text-xs text-gray-100 mt-1">Máquinas inativas</p>
-              </CardContent>
-            </Card>
-
-            {/* Card Com GPS */}
-            <Card className="border-none shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-sm font-medium text-purple-50">
-                  Com GPS
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-bold">{devicesWithPosition}</div>
-                <p className="text-xs text-purple-100 mt-1">Com localização ativa</p>
-              </CardContent>
-            </Card>
+          {/* Stats Cards (clicáveis) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            {statCards.map((card) => (
+              <Link key={card.title} href={card.href} className="block group">
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 group-hover:-translate-y-0.5 rounded-2xl">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${card.bg}`}>
+                      {card.icon}
+                    </div>
+                    <span className="text-xs text-gray-400">Clique para ver</span>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-gray-900">{card.value}</div>
+                    <p className="text-sm text-gray-500 mt-1">{card.title}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
           </div>
+
+          {/* Donut status */}
+          <Card className="mb-8 border border-gray-100 shadow-sm rounded-2xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-lg">Resumo de status</CardTitle>
+                <CardDescription>Distribuição dos dispositivos por status</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col md:flex-row items-center gap-6">
+              <div className="relative h-48 w-48 flex items-center justify-center">
+                <div
+                  className="h-44 w-44 rounded-full"
+                  style={{
+                    background: totalStatus > 0 ? `conic-gradient(${donutStops})` : '#e5e7eb'
+                  }}
+                ></div>
+                <div className="absolute h-24 w-24 bg-white rounded-full shadow-inner flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="text-2xl font-bold text-gray-900">{totalStatus}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 w-full max-w-md">
+                {statusSummary.map((item) => (
+                  <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    ></span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                      <p className="text-xs text-gray-500">{totalStatus > 0 ? Math.round((item.value / totalStatus) * 100) : 0}%</p>
+                    </div>
+                    <span className="text-lg font-bold text-gray-900">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Mapa */}
           <Card id="mapa" className="mb-8 border-none shadow-lg overflow-hidden">
@@ -185,7 +247,7 @@ export default function DashboardPage() {
                 Localização em Tempo Real
               </CardTitle>
               <CardDescription className="text-green-50">
-                Posição GPS das máquinas na Fazenda Santa Inês
+                Posição GPS dos dispositivos na Fazenda Santa Inês
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -198,10 +260,10 @@ export default function DashboardPage() {
             <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
               <CardTitle className="flex items-center gap-2">
                 <Tractor className="h-5 w-5 text-green-600" />
-                Máquinas Cadastradas
+                Dispositivos Cadastrados
               </CardTitle>
               <CardDescription>
-                Lista de todos os rastreadores SL48 configurados
+                Lista de todos os dispositivos configurados
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -212,8 +274,8 @@ export default function DashboardPage() {
                     className="flex items-center justify-between p-5 border border-gray-200 rounded-xl hover:shadow-md hover:border-green-300 transition-all duration-300 bg-white group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:from-green-200 group-hover:to-emerald-200 transition-all duration-300">
-                        <Tractor className="h-6 w-6 text-green-700" />
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center group-hover:from-green-200 group-hover:to-emerald-200 transition-all duration-300 text-2xl">
+                        {getDeviceIcon(device.category).emoji}
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg text-gray-900">{device.name}</h3>
@@ -226,7 +288,7 @@ export default function DashboardPage() {
                         <>
                           <div className="text-right hidden md:block">
                             <p className="text-xs text-gray-500 font-medium">Velocidade</p>
-                            <p className="font-bold text-gray-900">
+                            <p className={`font-bold ${getSpeedColor(device.position.speed, device.attributes)}`}>
                               {Math.round(device.position.speed)} km/h
                             </p>
                           </div>
@@ -257,10 +319,8 @@ export default function DashboardPage() {
                     <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <Tractor className="h-8 w-8 opacity-50" />
                     </div>
-                    <p className="font-medium">Nenhuma máquina cadastrada ainda.</p>
-                    <p className="text-sm mt-2">
-                      Configure os rastreadores SL48 no Traccar.
-                    </p>
+                    <p className="font-medium">Nenhum dispositivo cadastrado ainda.</p>
+                    <p className="text-sm mt-2">Configure os rastreadores no Traccar.</p>
                   </div>
                 )}
               </div>

@@ -18,6 +18,7 @@ import {
   AlertCircle,
   MapPin
 } from 'lucide-react'
+import { getDeviceIcon } from '@/lib/device-icons'
 
 const HistoryMap = dynamic(() => import('@/components/history-map'), {
   ssr: false,
@@ -31,6 +32,7 @@ const HistoryMap = dynamic(() => import('@/components/history-map'), {
 interface Device {
   id: number
   name: string
+  category?: string
   status: string
 }
 
@@ -128,7 +130,7 @@ export default function HistoricoPage() {
 
   async function fetchHistory() {
     if (!selectedDevice) {
-      setError('Selecione uma máquina')
+      setError('Selecione um dispositivo')
       return
     }
 
@@ -163,7 +165,9 @@ export default function HistoricoPage() {
     }
   }
 
-  const selectedDeviceName = devices.find(d => d.id === selectedDevice)?.name || ''
+  const selectedDeviceObj = devices.find(d => d.id === selectedDevice)
+  const selectedDeviceName = selectedDeviceObj?.name || ''
+  const selectedDeviceIcon = getDeviceIcon(selectedDeviceObj?.category)
 
   return (
     <>
@@ -178,7 +182,7 @@ export default function HistoricoPage() {
               Histórico de Rotas
             </h2>
             <p className="text-gray-600">
-              Visualize e analise as rotas percorridas pelas máquinas
+              Visualize e analise as rotas percorridas pelos dispositivos
             </p>
           </div>
 
@@ -190,13 +194,13 @@ export default function HistoricoPage() {
                 Filtros de Pesquisa
               </CardTitle>
               <CardDescription>
-                Selecione a máquina e o período para visualizar o histórico
+                Selecione o dispositivo e o período para visualizar o histórico
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="device">Máquina</Label>
+                  <Label htmlFor="device">Dispositivo</Label>
                   <select
                     id="device"
                     value={selectedDevice || ''}
@@ -306,7 +310,10 @@ export default function HistoricoPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <Card className="border-none shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Distância Percorrida</CardTitle>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-lg">{selectedDeviceIcon.emoji}</span>
+                      Distância Percorrida
+                    </CardTitle>
                     <Navigation className="h-5 w-5" />
                   </CardHeader>
                   <CardContent>
@@ -321,7 +328,10 @@ export default function HistoricoPage() {
 
                 <Card className="border-none shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Tempo Total</CardTitle>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-lg">{selectedDeviceIcon.emoji}</span>
+                      Tempo Total
+                    </CardTitle>
                     <Clock className="h-5 w-5" />
                   </CardHeader>
                   <CardContent>
@@ -336,7 +346,10 @@ export default function HistoricoPage() {
 
                 <Card className="border-none shadow-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Velocidade Média</CardTitle>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-lg">{selectedDeviceIcon.emoji}</span>
+                      Velocidade Média
+                    </CardTitle>
                     <TrendingUp className="h-5 w-5" />
                   </CardHeader>
                   <CardContent>
@@ -349,7 +362,10 @@ export default function HistoricoPage() {
 
                 <Card className="border-none shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Velocidade Máxima</CardTitle>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="text-lg">{selectedDeviceIcon.emoji}</span>
+                      Velocidade Máxima
+                    </CardTitle>
                     <Gauge className="h-5 w-5" />
                   </CardHeader>
                   <CardContent>
@@ -365,6 +381,7 @@ export default function HistoricoPage() {
                 <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
+                    <span className="text-lg">{selectedDeviceIcon.emoji}</span>
                     Rota Percorrida - {selectedDeviceName}
                   </CardTitle>
                   <CardDescription className="text-green-50">
@@ -375,6 +392,12 @@ export default function HistoricoPage() {
                   <HistoryMap
                     positions={historyData.positions}
                     deviceName={selectedDeviceName}
+                    icon={selectedDeviceIcon}
+                    speedRules={{
+                      ideal: selectedDeviceObj?.attributes?.speedIdealMax,
+                      high: selectedDeviceObj?.attributes?.speedHighMax,
+                      extremeName: selectedDeviceObj?.attributes?.speedExtremeName
+                    }}
                   />
                 </CardContent>
               </Card>
@@ -385,9 +408,11 @@ export default function HistoricoPage() {
             <Card className="border-none shadow-lg">
               <CardContent className="p-12">
                 <div className="text-center">
-                  <Tractor className="h-20 w-20 text-green-600 mx-auto mb-4" />
+                    <div className="h-20 w-20 text-5xl mx-auto mb-4 flex items-center justify-center">
+                      <span>{selectedDeviceIcon.emoji}</span>
+                    </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Selecione uma máquina e período
+                    Selecione um dispositivo e período
                   </h3>
                   <p className="text-gray-600">
                     Use os filtros acima para buscar o histórico de rotas

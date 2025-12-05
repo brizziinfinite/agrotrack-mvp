@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import axios from 'axios'
+import { traccarClient } from '@/lib/traccar'
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { id, name, uniqueId, category, model, m2m, plate, color } = body
+    const { id, name, uniqueId, category, model, m2m, plate, color, speedIdealMax, speedHighMax, speedExtremeName } = body
 
     if (!id || !name) {
       return NextResponse.json(
@@ -16,23 +16,14 @@ export async function PUT(request: Request) {
       )
     }
 
-    const TRACCAR_URL = 'http://178.156.176.177:8082'
-    const TRACCAR_EMAIL = 'brizziinfinite@gmail.com'
-    const TRACCAR_PASSWORD = 'a202595B'
-
-    const auth = Buffer.from(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`).toString('base64')
-
-    const headers = {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
-
     // Criar attributes com dados extras
     const attributes: any = {}
     if (m2m) attributes.m2m = m2m
     if (plate) attributes.plate = plate
     if (color) attributes.color = color
+    if (speedIdealMax) attributes.speedIdealMax = Number(speedIdealMax)
+    if (speedHighMax) attributes.speedHighMax = Number(speedHighMax)
+    if (speedExtremeName) attributes.speedExtremeName = speedExtremeName
 
     // Atualizar device no Traccar
     const deviceData = {
@@ -47,11 +38,7 @@ export async function PUT(request: Request) {
 
     console.log('🚜 Atualizando máquina no Traccar:', deviceData)
 
-    const response = await axios.put(
-      `${TRACCAR_URL}/api/devices/${id}`,
-      deviceData,
-      { headers }
-    )
+    const response = await traccarClient.put(`/api/devices/${id}`, deviceData)
 
     console.log('✅ Máquina atualizada com sucesso:', response.data)
 

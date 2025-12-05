@@ -1,13 +1,35 @@
 'use client'
 
-import { Tractor, MapPin, Activity, Menu, History } from 'lucide-react'
-import { useState } from 'react'
+import { Tractor, MapPin, Activity, Menu, History, Sun, Moon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const pathname = usePathname()
+
+  useEffect(() => {
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
+    const prefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+    const initial = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'light'
+    setTheme(initial)
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', initial === 'dark')
+    }
+  }, [])
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('dark', next === 'dark')
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', next)
+    }
+  }
 
   const isActive = (path: string) => {
     if (path === '/' && pathname === '/') return true
@@ -48,9 +70,9 @@ export default function Header() {
               <Activity className="h-4 w-4" />
               Dashboard
             </Link>
-            <Link href="/maquinas" className={linkClass('/maquinas')}>
+            <Link href="/dispositivos" className={linkClass('/dispositivos')}>
               <Tractor className="h-4 w-4" />
-              Máquinas
+              Dispositivos
             </Link>
             <Link href="/historico" className={linkClass('/historico')}>
               <History className="h-4 w-4" />
@@ -59,9 +81,18 @@ export default function Header() {
           </nav>
 
           {/* Status Badge */}
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-200">
-            <div className="h-2 w-2 rounded-full bg-green-600 animate-pulse"></div>
-            <span className="text-sm font-medium text-green-700">Sistema Ativo</span>
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+              aria-label="Alternar tema"
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5 text-amber-500" /> : <Moon className="h-5 w-5 text-gray-700" />}
+            </button>
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-emerald-900/30 rounded-full border border-green-200 dark:border-emerald-800">
+              <div className="h-2 w-2 rounded-full bg-green-600 animate-pulse"></div>
+              <span className="text-sm font-medium text-green-700 dark:text-emerald-100">Sistema Ativo</span>
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -81,9 +112,9 @@ export default function Header() {
                 <Activity className="h-4 w-4" />
                 Dashboard
               </Link>
-              <Link href="/maquinas" className={linkClass('/maquinas')} onClick={() => setMobileMenuOpen(false)}>
+              <Link href="/dispositivos" className={linkClass('/dispositivos')} onClick={() => setMobileMenuOpen(false)}>
                 <Tractor className="h-4 w-4" />
-                Máquinas
+                Dispositivos
               </Link>
               <Link href="/historico" className={linkClass('/historico')} onClick={() => setMobileMenuOpen(false)}>
                 <History className="h-4 w-4" />

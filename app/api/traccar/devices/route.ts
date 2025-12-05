@@ -1,24 +1,12 @@
 import { NextResponse } from 'next/server'
-import axios from 'axios'
+import { traccarClient } from '@/lib/traccar'
 
 export async function GET() {
   try {
-    const TRACCAR_URL = 'http://178.156.176.177:8082'
-    const TRACCAR_EMAIL = 'brizziinfinite@gmail.com'
-    const TRACCAR_PASSWORD = 'a202595B'
-    
-    console.log('🔍 Conectando no Traccar...')
-    
-    // Criar autenticação
-    const auth = Buffer.from(`${TRACCAR_EMAIL}:${TRACCAR_PASSWORD}`).toString('base64')
-    
-    const headers = {
-      'Authorization': `Basic ${auth}`,
-      'Accept': 'application/json'
-    }
-    
+    const toKmh = (speed: number) => Math.round((speed || 0) * 1.852 * 10) / 10
+
     // Buscar dispositivos
-    const devicesResponse = await axios.get(`${TRACCAR_URL}/api/devices`, { headers })
+    const devicesResponse = await traccarClient.get('/api/devices')
     const devices = devicesResponse.data
     
     console.log(`✅ Encontrados ${devices.length} dispositivos`)
@@ -26,7 +14,7 @@ export async function GET() {
     // Buscar posições
     let positions = []
     try {
-      const positionsResponse = await axios.get(`${TRACCAR_URL}/api/positions`, { headers })
+      const positionsResponse = await traccarClient.get('/api/positions')
       positions = positionsResponse.data
       console.log(`✅ Encontradas ${positions.length} posições`)
     } catch (e) {
@@ -36,14 +24,25 @@ export async function GET() {
     // Combinar dados
     const positionsMap = new Map(positions.map((p: any) => [p.deviceId, p]))
     
-    const result = devices.map((device: any) => ({
-      id: device.id,
-      name: device.name,
-      uniqueId: device.uniqueId,
-      status: device.status,
-      lastUpdate: device.lastUpdate,
-      position: positionsMap.get(device.id) || null
-    }))
+    const result = devices.map((device: any) => {
+      const position = positionsMap.get(device.id)
+
+      return {
+        id: device.id,
+        name: device.name,
+        uniqueId: device.uniqueId,
+        category: device.category,
+        attributes: device.attributes || {},
+        status: device.status,
+        lastUpdate: device.lastUpdate,
+        position: position
+          ? {
+              ...position,
+              speed: toKmh(position.speed)
+            }
+          : null
+      }
+    })
     
     return NextResponse.json({
       success: true,

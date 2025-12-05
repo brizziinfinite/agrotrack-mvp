@@ -29,6 +29,9 @@ interface Device {
     m2m?: string
     plate?: string
     color?: string
+    speedIdealMax?: number
+    speedHighMax?: number
+    speedExtremeName?: string
   }
 }
 
@@ -51,7 +54,7 @@ export default function MaquinasPage() {
       if (result.success) {
         setDevices(result.data)
       } else {
-        setError('Erro ao carregar máquinas')
+        setError('Erro ao carregar dispositivos')
       }
     } catch (err: any) {
       setError(err.message)
@@ -117,7 +120,7 @@ export default function MaquinasPage() {
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
-            <p className="text-gray-600">Carregando máquinas...</p>
+            <p className="text-gray-600">Carregando dispositivos...</p>
           </div>
         </div>
       </>
@@ -137,19 +140,19 @@ export default function MaquinasPage() {
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center">
                   <Tractor className="h-6 w-6 text-white" />
                 </div>
-                Gerenciar Máquinas
+                Gerenciar Dispositivos
               </h2>
               <p className="text-gray-600">
-                Adicione, edite ou remova máquinas do sistema
+                Adicione, edite ou remova dispositivos do sistema
               </p>
             </div>
             
             <Button
-              onClick={() => router.push('/maquinas/nova')}
+              onClick={() => router.push('/dispositivos/nova')}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Máquina
+              Adicionar Dispositivo
             </Button>
           </div>
 
@@ -163,24 +166,24 @@ export default function MaquinasPage() {
             </Card>
           )}
 
-          {/* Lista de Máquinas */}
+          {/* Lista de Dispositivos */}
           {devices.length === 0 ? (
             <Card className="border-none shadow-lg">
               <CardContent className="p-12">
                 <div className="text-center">
                   <Tractor className="h-20 w-20 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Nenhuma máquina cadastrada
+                    Nenhum dispositivo cadastrado
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    Comece adicionando sua primeira máquina ao sistema
+                    Comece adicionando seu primeiro dispositivo ao sistema
                   </p>
                   <Button
-                    onClick={() => router.push('/maquinas/nova')}
+                    onClick={() => router.push('/dispositivos/nova')}
                     className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Primeira Máquina
+                    Adicionar Primeiro Dispositivo
                   </Button>
                 </div>
               </CardContent>
@@ -245,7 +248,7 @@ export default function MaquinasPage() {
                     {/* Botões */}
                     <div className="flex gap-2 pt-4 border-t">
                       <Button
-                        onClick={() => router.push(`/maquinas/${device.id}/editar`)}
+                        onClick={() => router.push(`/dispositivos/${device.id}/editar`)}
                         variant="outline"
                         className="flex-1"
                         size="sm"

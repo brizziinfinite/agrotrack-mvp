@@ -1,69 +1,33 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Tractor, Save, ArrowLeft, Loader2 } from 'lucide-react'
+import { Tractor, Save, ArrowLeft } from 'lucide-react'
+import { deviceIconOptions } from '@/lib/device-icons'
 
-export default function EditarMaquinaPage() {
+export default function NovaMaquinaPage() {
   const router = useRouter()
-  const params = useParams()
-  const deviceId = params.id as string
-
   const [loading, setLoading] = useState(false)
-  const [loadingData, setLoadingData] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
   const [formData, setFormData] = useState({
-    id: '',
     name: '',
     uniqueId: '',
-    category: 'tractor',
+    category: 'default',
     model: '',
     m2m: '',
     plate: '',
-    color: ''
+    color: '',
+    speedIdealMax: '',
+    speedHighMax: '',
+    speedExtremeName: 'Extrema'
   })
-
-  // Carregar dados da máquina
-  useEffect(() => {
-    async function loadDevice() {
-      try {
-        const response = await fetch('/api/traccar/devices')
-        const result = await response.json()
-
-        if (result.success) {
-          const device = result.data.find((d: any) => d.id === Number(deviceId))
-          
-          if (device) {
-            setFormData({
-              id: device.id,
-              name: device.name || '',
-              uniqueId: device.uniqueId || '',
-              category: device.category || 'tractor',
-              model: device.model || '',
-              m2m: device.attributes?.m2m || '',
-              plate: device.attributes?.plate || '',
-              color: device.attributes?.color || ''
-            })
-          } else {
-            setError('Máquina não encontrada')
-          }
-        }
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoadingData(false)
-      }
-    }
-
-    loadDevice()
-  }, [deviceId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -72,8 +36,8 @@ export default function EditarMaquinaPage() {
     setSuccess(false)
 
     try {
-      const response = await fetch('/api/traccar/devices/update', {
-        method: 'PUT',
+      const response = await fetch('/api/traccar/devices/create', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -95,20 +59,6 @@ export default function EditarMaquinaPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (loadingData) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20 flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto mb-4" />
-            <p className="text-gray-600">Carregando dados da máquina...</p>
-          </div>
-        </div>
-      </>
-    )
   }
 
   return (
@@ -133,19 +83,19 @@ export default function EditarMaquinaPage() {
               <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center">
                 <Tractor className="h-6 w-6 text-white" />
               </div>
-              Editar Máquina
+              Adicionar Novo Dispositivo
             </h2>
             <p className="text-gray-600">
-              Atualize as informações da máquina
+              Cadastre um novo dispositivo para rastreamento
             </p>
           </div>
 
           {/* Formulário */}
           <Card className="border-none shadow-lg">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-green-50/50 border-b">
-              <CardTitle>Informações da Máquina</CardTitle>
+              <CardTitle>Informações do Dispositivo</CardTitle>
               <CardDescription>
-                Edite os dados da máquina
+                Preencha os dados do dispositivo que será rastreado
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -154,7 +104,7 @@ export default function EditarMaquinaPage() {
                 {/* Nome */}
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                    Nome da Máquina *
+                    Nome do Dispositivo *
                   </Label>
                   <Input
                     id="name"
@@ -206,23 +156,29 @@ export default function EditarMaquinaPage() {
 
                 {/* Categoria */}
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium text-gray-700">
-                    Categoria
-                  </Label>
-                  <select
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent bg-white"
-                  >
-                    <option value="tractor">🚜 Trator</option>
-                    <option value="harvester">🌾 Colheitadeira</option>
-                    <option value="sprayer">💧 Pulverizador</option>
-                    <option value="truck">🚚 Caminhão</option>
-                    <option value="car">🚗 Carro</option>
-                    <option value="van">🚐 Van</option>
-                    <option value="default">📍 Outro</option>
-                  </select>
+              <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                Tipo de dispositivo
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {deviceIconOptions.map((option) => {
+                  const selected = formData.category === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, category: option.value })}
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all ${
+                        selected
+                          ? 'border-green-500 bg-green-50 shadow-sm'
+                          : 'border-gray-200 hover:border-green-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="text-xl">{option.emoji}</span>
+                      <span className="text-sm font-medium text-gray-800">{option.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
                 </div>
 
                 {/* Modelo */}
@@ -281,17 +237,65 @@ export default function EditarMaquinaPage() {
                   </select>
                 </div>
 
+                {/* Regras de Velocidade */}
+                <div className="space-y-3 border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-800">Regras de velocidade (km/h)</span>
+                    <span className="text-xs text-gray-500">Personalize por dispositivo</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-gray-700">Ideal (até)</Label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={formData.speedIdealMax}
+                        onChange={(e) => setFormData({ ...formData, speedIdealMax: e.target.value })}
+                        placeholder="ex: 80"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      />
+                      <p className="text-xs text-green-700">Cor verde</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-gray-700">Alta (até)</Label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={formData.speedHighMax}
+                        onChange={(e) => setFormData({ ...formData, speedHighMax: e.target.value })}
+                        placeholder="ex: 100"
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-amber-700">Cor amarela</p>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-gray-700">Nome da faixa acima da alta</Label>
+                      <input
+                        type="text"
+                        value={formData.speedExtremeName}
+                        onChange={(e) => setFormData({ ...formData, speedExtremeName: e.target.value })}
+                        placeholder="Extrema"
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-rose-700">Padrão: Extrema</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">Exemplo: Carro 110/130; trator 6/10. Faixa extrema é acima do valor de alta.</p>
+                </div>
+
                 {/* Mensagens */}
                 {error && (
                   <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-700 text-sm">{error}</p>
-                  </div>
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
                 )}
 
                 {success && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-green-700 text-sm">
-                      ✅ Máquina atualizada com sucesso! Redirecionando...
+                    ✅ Dispositivo cadastrado com sucesso! Redirecionando...
                     </p>
                   </div>
                 )}
@@ -311,7 +315,7 @@ export default function EditarMaquinaPage() {
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        Salvar Alterações
+                        Salvar Dispositivo
                       </>
                     )}
                   </Button>
