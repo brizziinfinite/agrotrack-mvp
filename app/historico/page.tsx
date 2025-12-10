@@ -14,7 +14,6 @@ import {
   Clock,
   TrendingUp,
   Gauge,
-  Tractor,
   AlertCircle,
   MapPin
 } from 'lucide-react'
@@ -34,6 +33,15 @@ interface Device {
   name: string
   category?: string
   status: string
+  attributes?: {
+    plate?: string
+    m2m?: string
+    iccid?: string
+    color?: string
+    speedIdealMax?: number
+    speedHighMax?: number
+    speedExtremeName?: string
+  }
 }
 
 interface Position {
@@ -66,6 +74,7 @@ export default function HistoricoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [devicesLoading, setDevicesLoading] = useState(true)
+  const [deviceSearch, setDeviceSearch] = useState('')
 
   useEffect(() => {
     fetchDevices()
@@ -82,12 +91,28 @@ export default function HistoricoPage() {
           setSelectedDevice(result.data[0].id)
         }
       }
-    } catch (err: any) {
-      console.error('Erro ao buscar dispositivos:', err)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao buscar dispositivos'
+      console.error('Erro ao buscar dispositivos:', message)
     } finally {
       setDevicesLoading(false)
     }
   }
+
+  const filteredDevices = devices.filter((device) => {
+    const term = deviceSearch.trim().toLowerCase()
+    if (!term) return true
+    const plate = (device.attributes?.plate || '').toLowerCase()
+    const m2m = (device.attributes?.m2m || '').toLowerCase()
+    const iccid = (device.attributes?.iccid || '').toLowerCase()
+    return (
+      device.name.toLowerCase().includes(term) ||
+      plate.includes(term) ||
+      m2m.includes(term) ||
+      iccid.includes(term) ||
+      device.id.toString().includes(term)
+    )
+  })
 
   function getDateRange(): { from: string; to: string } {
     const now = new Date()
@@ -158,8 +183,9 @@ export default function HistoricoPage() {
       } else {
         setError(result.error)
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao buscar histórico'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -199,21 +225,27 @@ export default function HistoricoPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="device">Dispositivo</Label>
-                  <select
-                    id="device"
-                    value={selectedDevice || ''}
-                    onChange={(e) => setSelectedDevice(Number(e.target.value))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent bg-white"
-                    disabled={devicesLoading}
-                  >
-                    {devices.map((device) => (
-                      <option key={device.id} value={device.id}>
-                        {device.name}
-                      </option>
-                    ))}
-                  </select>
+              <div className="space-y-2">
+                <Label htmlFor="device">Dispositivo</Label>
+                <Input
+                  placeholder="Buscar por nome, placa ou ID..."
+                  value={deviceSearch}
+                  onChange={(e) => setDeviceSearch(e.target.value)}
+                  className="w-full"
+                />
+                <select
+                  id="device"
+                  value={selectedDevice || ''}
+                  onChange={(e) => setSelectedDevice(Number(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent bg-white"
+                  disabled={devicesLoading}
+                >
+                  {filteredDevices.map((device) => (
+                    <option key={device.id} value={device.id}>
+                      {device.name}
+                    </option>
+                  ))}
+                </select>
                 </div>
 
                 <div className="space-y-2">

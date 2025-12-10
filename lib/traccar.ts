@@ -51,7 +51,7 @@ export interface TraccarPosition {
     motion?: boolean
     ignition?: boolean
     hours?: number
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 

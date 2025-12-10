@@ -10,6 +10,23 @@ import { Input } from '@/components/ui/input'
 import { Tractor, Save, ArrowLeft, Loader2 } from 'lucide-react'
 import { deviceIconOptions } from '@/lib/device-icons'
 
+interface DeviceApi {
+  id: number
+  name: string
+  uniqueId: string
+  category: string
+  model?: string
+  attributes?: {
+    m2m?: string
+    plate?: string
+    color?: string
+    iccid?: string
+    speedIdealMax?: number
+    speedHighMax?: number
+    speedExtremeName?: string
+  }
+}
+
 export default function EditarMaquinaPage() {
   const router = useRouter()
   const params = useParams()
@@ -43,7 +60,7 @@ export default function EditarMaquinaPage() {
         const result = await response.json()
 
         if (result.success) {
-          const device = result.data.find((d: any) => d.id === Number(deviceId))
+          const device = (result.data as DeviceApi[]).find((d) => d.id === Number(deviceId))
           
           if (device) {
             setFormData({
@@ -64,8 +81,9 @@ export default function EditarMaquinaPage() {
             setError('Dispositivo não encontrado')
           }
         }
-      } catch (err: any) {
-        setError(err.message)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Erro ao carregar dispositivo'
+        setError(message)
       } finally {
         setLoadingData(false)
       }
@@ -99,8 +117,9 @@ export default function EditarMaquinaPage() {
       } else {
         setError(result.error)
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao atualizar dispositivo'
+      setError(message)
     } finally {
       setLoading(false)
     }

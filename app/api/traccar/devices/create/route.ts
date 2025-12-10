@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server'
 import { traccarClient } from '@/lib/traccar'
 
+interface CreateDevicePayload {
+  name: string
+  uniqueId: string
+  category?: string
+  model?: string
+  m2m?: string
+  plate?: string
+  color?: string
+  iccid?: string
+  speedIdealMax?: number | string
+  speedHighMax?: number | string
+  speedExtremeName?: string
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
+    const body: CreateDevicePayload = await request.json()
     const { name, uniqueId, category, model, m2m, plate, color, iccid, speedIdealMax, speedHighMax, speedExtremeName } = body
 
     if (!name || !uniqueId) {
@@ -17,13 +31,13 @@ export async function POST(request: Request) {
     }
 
     // Criar attributes com dados extras
-    const attributes: any = {}
+    const attributes: Record<string, unknown> = {}
     if (m2m) attributes.m2m = m2m
     if (plate) attributes.plate = plate
     if (color) attributes.color = color
     if (iccid) attributes.iccid = iccid
-    if (speedIdealMax) attributes.speedIdealMax = Number(speedIdealMax)
-    if (speedHighMax) attributes.speedHighMax = Number(speedHighMax)
+    if (speedIdealMax !== undefined) attributes.speedIdealMax = Number(speedIdealMax)
+    if (speedHighMax !== undefined) attributes.speedHighMax = Number(speedHighMax)
     if (speedExtremeName) attributes.speedExtremeName = speedExtremeName
 
     // Criar device no Traccar
@@ -47,13 +61,14 @@ export async function POST(request: Request) {
       data: response.data
     })
 
-  } catch (error: any) {
-    console.error('❌ Erro ao criar máquina:', error.response?.data || error.message)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error('❌ Erro ao criar máquina:', message)
 
     return NextResponse.json(
       {
         success: false,
-        error: error.response?.data?.message || error.message
+        error: message
       },
       { status: 500 }
     )

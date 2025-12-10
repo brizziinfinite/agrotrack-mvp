@@ -1,34 +1,33 @@
 'use client'
 
-import { Tractor, MapPin, Activity, Menu, History, Sun, Moon } from 'lucide-react'
+import { Tractor, Activity, Menu, History, Sun, Moon, MapPin } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'dark'
+    const stored = window.localStorage.getItem('theme')
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    return stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'light'
+  })
   const pathname = usePathname()
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    const prefersDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    const initial = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'dark'
-    setTheme(initial)
     if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', initial === 'dark')
+      document.documentElement.classList.toggle('dark', theme === 'dark')
     }
-  }, [])
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme])
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light'
     setTheme(next)
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', next === 'dark')
-    }
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('theme', next)
-    }
+    // O efeito acima cuida de aplicar o tema e persistir
   }
 
   const isActive = (path: string) => {
@@ -78,6 +77,10 @@ export default function Header() {
               <History className="h-4 w-4" />
               Histórico
             </Link>
+            <Link href="/cercas" className={linkClass('/cercas')}>
+              <MapPin className="h-4 w-4" />
+              Cercas
+            </Link>
           </nav>
 
           {/* Status Badge */}
@@ -119,6 +122,10 @@ export default function Header() {
               <Link href="/historico" className={linkClass('/historico')} onClick={() => setMobileMenuOpen(false)}>
                 <History className="h-4 w-4" />
                 Histórico
+              </Link>
+              <Link href="/cercas" className={linkClass('/cercas')} onClick={() => setMobileMenuOpen(false)}>
+                <MapPin className="h-4 w-4" />
+                Cercas
               </Link>
             </nav>
           </div>

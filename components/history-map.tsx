@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -37,13 +37,13 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
   const playbackLineRef = useRef<L.Polyline | null>(null)
   const trailLineRef = useRef<L.Polyline | null>(null)
 
-  const getSpeedColor = (speed: number) => {
+  const getSpeedColor = useCallback((speed: number) => {
     const ideal = Number(speedRules?.ideal) || 0
     const high = Number(speedRules?.high) || 0
     if (ideal && speed <= ideal) return '#16a34a'
     if (high && speed <= high) return '#eab308'
     return '#ef4444'
-  }
+  }, [speedRules?.high, speedRules?.ideal])
 
   // Inicializar mapa
   useEffect(() => {
@@ -65,6 +65,7 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
     }
   }, [])
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   // Limpar camadas quando não há posições
   useEffect(() => {
     if (!mapRef.current) return
@@ -145,7 +146,8 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
       opacity: 0.4
     }).addTo(mapRef.current)
 
-  }, [positions])
+  }, [getSpeedColor, icon.color, positions])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Controlar replay
   useEffect(() => {
@@ -255,7 +257,7 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
       const slice = positions.slice(start, currentIndex + 1).map(p => [p.latitude, p.longitude] as [number, number])
       trailLineRef.current.setLatLngs(slice)
     }
-  }, [currentIndex, positions])
+  }, [currentIndex, deviceName, getSpeedColor, icon.color, icon.emoji, positions])
 
   return (
     <div className="relative">

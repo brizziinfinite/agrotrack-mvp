@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server'
-import { traccarClient } from '@/lib/traccar'
+import { traccarClient, TraccarPosition } from '@/lib/traccar'
+
+interface SummaryReport {
+  distance?: number
+  averageSpeed?: number
+  maxSpeed?: number
+}
 
 export async function GET(request: Request) {
   try {
@@ -22,27 +28,27 @@ export async function GET(request: Request) {
     console.log(`Device: ${deviceId}, Período: ${from} até ${to}`)
 
     const positionsUrl = `/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`
-    const positionsResponse = await traccarClient.get(positionsUrl)
+    const positionsResponse = await traccarClient.get<TraccarPosition[]>(positionsUrl)
     const positions = positionsResponse.data
 
     console.log(`✅ Encontradas ${positions.length} posições no histórico`)
 
     if (positions.length > 1) {
-      positions.sort((a: any, b: any) =>
+      positions.sort((a, b) =>
         new Date(a.deviceTime).getTime() - new Date(b.deviceTime).getTime()
       )
     }
 
     console.log('📊 Buscando estatísticas do Traccar Reports...')
     const summaryUrl = `/api/reports/summary?deviceId=${deviceId}&from=${from}&to=${to}`
-    const summaryResponse = await traccarClient.get(summaryUrl)
+    const summaryResponse = await traccarClient.get<SummaryReport[]>(summaryUrl)
     const summary = summaryResponse.data[0] || {}
 
     console.log('📊 Estatísticas do Traccar:', summary)
 
     const toKmh = (speed: number) => (speed || 0) * 1.852
 
-    const positionsKmh = positions.map((pos: any) => ({
+    const positionsKmh = positions.map((pos) => ({
       ...pos,
       speed: toKmh(pos.speed)
     }))
@@ -57,7 +63,7 @@ export async function GET(request: Request) {
     let computedMax = 0
     let computedTotalSpeed = 0
     let computedPoints = 0
-    positionsKmh.forEach((pos: any) => {
+    positionsKmh.forEach((pos) => {
       if (pos.speed > computedMax) computedMax = pos.speed
       computedTotalSpeed += pos.speed
       computedPoints++
@@ -101,13 +107,14 @@ export async function GET(request: Request) {
       }
     })
 
-  } catch (error: any) {
-    console.error('❌ Erro ao buscar histórico:', error.message)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro ao buscar histórico'
+    console.error('❌ Erro ao buscar histórico:', message)
 
     return NextResponse.json(
       {
         success: false,
-        error: error.message
+        error: message
       },
       { status: 500 }
     )

@@ -1,30 +1,37 @@
 import { NextResponse } from 'next/server'
-import { traccarClient } from '@/lib/traccar'
+import { traccarClient, TraccarDevice, TraccarPosition } from '@/lib/traccar'
+
+type DeviceWithAttributes = TraccarDevice & {
+  attributes?: Record<string, unknown>
+  category?: string
+}
+
+type PositionMap = Map<number, TraccarPosition>
 
 export async function GET() {
   try {
     const toKmh = (speed: number) => Math.round((speed || 0) * 1.852 * 10) / 10
 
     // Buscar dispositivos
-    const devicesResponse = await traccarClient.get('/api/devices')
-    const devices = devicesResponse.data
+    const devicesResponse = await traccarClient.get<TraccarDevice[]>('/api/devices')
+    const devices = devicesResponse.data as DeviceWithAttributes[]
     
     console.log(`✅ Encontrados ${devices.length} dispositivos`)
     
     // Buscar posições
-    let positions = []
+    let positions: TraccarPosition[] = []
     try {
-      const positionsResponse = await traccarClient.get('/api/positions')
+      const positionsResponse = await traccarClient.get<TraccarPosition[]>('/api/positions')
       positions = positionsResponse.data
       console.log(`✅ Encontradas ${positions.length} posições`)
-    } catch (e) {
+    } catch {
       console.log('⚠️  Sem posições disponíveis')
     }
     
     // Combinar dados
-    const positionsMap = new Map(positions.map((p: any) => [p.deviceId, p]))
+    const positionsMap: PositionMap = new Map(positions.map((p) => [p.deviceId, p]))
     
-    const result = devices.map((device: any) => {
+    const result = devices.map((device) => {
       const position = positionsMap.get(device.id)
 
       return {
@@ -49,14 +56,14 @@ export async function GET() {
       data: result
     })
     
-  } catch (error: any) {
-    console.error('❌ Erro:', error.message)
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error('❌ Erro:', message)
     
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message,
-        stack: error.stack
+        error: message
       },
       { status: 500 }
     )

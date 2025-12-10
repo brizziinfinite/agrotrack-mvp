@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Header from '@/components/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { 
   Tractor, 
   Plus, 
@@ -42,6 +43,9 @@ export default function MaquinasPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [confirmingDevice, setConfirmingDevice] = useState<Device | null>(null)
+  const [confirmationText, setConfirmationText] = useState('')
+  const [confirmError, setConfirmError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDevices()
@@ -53,23 +57,33 @@ export default function MaquinasPage() {
       const result = await response.json()
 
       if (result.success) {
-        setDevices(result.data)
+        setDevices(result.data as Device[])
       } else {
         setError('Erro ao carregar dispositivos')
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar dispositivos'
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleDelete(id: number, name: string) {
-    if (!confirm(`Tem certeza que deseja deletar "${name}"?`)) {
+  function askDelete(device: Device) {
+    setConfirmingDevice(device)
+    setConfirmationText('')
+    setConfirmError(null)
+  }
+
+  async function handleDelete() {
+    if (!confirmingDevice) return
+    if (confirmationText.trim() !== confirmingDevice.name) {
+      setConfirmError('Digite exatamente o nome do dispositivo para confirmar.')
       return
     }
 
-    setDeletingId(id)
+    setConfirmError(null)
+    setDeletingId(confirmingDevice.id)
 
     try {
       const response = await fetch('/api/traccar/devices/delete', {
@@ -77,26 +91,29 @@ export default function MaquinasPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id: confirmingDevice.id })
       })
 
       const result = await response.json()
 
       if (result.success) {
         // Remover da lista
-        setDevices(devices.filter(d => d.id !== id))
+        setDevices(devices.filter(d => d.id !== confirmingDevice.id))
+        setConfirmingDevice(null)
+        setConfirmationText('')
       } else {
         alert('Erro ao deletar: ' + result.error)
       }
-    } catch (err: any) {
-      alert('Erro ao deletar: ' + err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao deletar dispositivo'
+      alert('Erro ao deletar: ' + message)
     } finally {
       setDeletingId(null)
     }
   }
 
   function getCategoryIcon(category: string) {
-    const icons: any = {
+    const icons: Record<string, string> = {
       tractor: '🚜',
       harvester: '🌾',
       sprayer: '💧',
@@ -267,7 +284,7 @@ export default function MaquinasPage() {
                         Editar
                       </Button>
                       <Button
-                        onClick={() => handleDelete(device.id, device.name)}
+                        onClick={() => askDelete(device)}
                         variant="outline"
                         className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         size="sm"
@@ -293,6 +310,72 @@ export default function MaquinasPage() {
           )}
         </div>
       </div>
+
+      {confirmingDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <Card className="border-none shadow-none">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-red-600">
+                  <Trash2 className="h-5 w-5" />
+                  Confirmar exclusão
+                </CardTitle>
+                <CardDescription className="text-gray-700">
+                  Esta ação remove o dispositivo <strong>{confirmingDevice.name}</strong> e não pode ser desfeita.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-gray-700">
+                  Para continuar, digite o nome exato do dispositivo.
+                </p>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600">
+                    Digite: {confirmingDevice.name}
+                  </label>
+                  <Input
+                    value={confirmationText}
+                    onChange={(e) => setConfirmationText(e.target.value)}
+                    placeholder="Nome do dispositivo"
+                  />
+                  {confirmError && (
+                    <p className="text-xs text-red-600">{confirmError}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setConfirmingDevice(null)
+                      setConfirmationText('')
+                      setConfirmError(null)
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleDelete}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                    disabled={
+                      deletingId === confirmingDevice.id ||
+                      confirmationText.trim() !== confirmingDevice.name
+                    }
+                  >
+                    {deletingId === confirmingDevice.id ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Deletando...
+                      </>
+                    ) : (
+                      'Confirmar exclusão'
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </>
   )
 }

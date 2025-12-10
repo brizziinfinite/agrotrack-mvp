@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 import Header from '@/components/header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tractor, Navigation, Clock, AlertCircle, MapPin, TrendingUp, Wifi, PauseCircle, MoveRight, Smartphone } from 'lucide-react'
+import { Tractor, AlertCircle, MapPin, Wifi, PauseCircle, MoveRight, Smartphone } from 'lucide-react'
 import './leaflet.css'
 import { getDeviceIcon } from '@/lib/device-icons'
 import Link from 'next/link'
@@ -68,8 +68,9 @@ export default function DashboardPage() {
       } else {
         setError(result.error)
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar dispositivos'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -77,7 +78,6 @@ export default function DashboardPage() {
 
   const onlineDevices = devices.filter(d => d.status === 'online').length
   const offlineDevices = devices.filter(d => d.status === 'offline').length
-  const devicesWithPosition = devices.filter(d => d.position).length
   const movingDevices = devices.filter(d => d.position && d.position.speed > 1).length
   const stoppedDevices = devices.filter(d => d.position && d.position.speed <= 1 && d.status === 'online').length
 
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Map devices={devices} />
+              <Map devices={devices} enableGeofence={false} />
             </CardContent>
           </Card>
 

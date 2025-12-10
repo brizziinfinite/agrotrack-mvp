@@ -55,8 +55,9 @@ export default function NovaMaquinaPage() {
       } else {
         setError(result.error)
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao salvar dispositivo'
+      setError(message)
     } finally {
       setLoading(false)
     }
