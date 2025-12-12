@@ -1,0 +1,365 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Core Palette - Petrol Blue Theme */
+    --background: 210 20% 98%;
+    --foreground: 210 40% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 11%;
+
+    /* Petrol Blue Primary */
+    --primary: 187 78% 24%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Graphite Secondary */
+    --secondary: 213 14% 28%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Ice Gray Muted */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Mint Green Accent */
+    --accent: 160 84% 39%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Success - Green */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 187 78% 24%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 40% 11%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 187 78% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 30% 18%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 210 30% 20%;
+    --sidebar-ring: 187 78% 34%;
+    --sidebar-muted: 210 20% 60%;
+
+    /* Glass Effect */
+    --glass: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.2;
+
+    /* Chart Colors */
+    --chart-1: 187 78% 34%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 213 14% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+
+    /* Status Colors */
+    --status-online: 160 84% 39%;
+    --status-offline: 0 0% 60%;
+    --status-moving: 187 78% 34%;
+    --status-stopped: 38 92% 50%;
+    --status-idle: 213 14% 45%;
+  }
+
+  .dark {
+    --background: 220 25% 8%;
+    --foreground: 210 20% 95%;
+
+    --card: 220 25% 11%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 220 25% 11%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 187 68% 45%;
+    --primary-foreground: 220 25% 8%;
+
+    --secondary: 213 14% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 20% 16%;
+    --muted-foreground: 215 20% 60%;
+
+    --accent: 160 70% 45%;
+    --accent-foreground: 220 25% 8%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 25% 8%;
+
+    --success: 160 70% 45%;
+    --success-foreground: 220 25% 8%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 187 68% 45%;
+
+    --sidebar-background: 220 30% 6%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 187 68% 45%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 25% 12%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 220 20% 14%;
+    --sidebar-ring: 187 68% 45%;
+    --sidebar-muted: 210 20% 50%;
+
+    --glass: 220 25% 11% / 0.8;
+    --glass-border: 0 0% 100% / 0.1;
+
+    --chart-1: 187 68% 50%;
+    --chart-2: 160 70% 50%;
+    --chart-3: 213 14% 60%;
+    --chart-4: 38 92% 55%;
+    --chart-5: 0 72% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Glass Card Effect */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
+  }
+
+  .glass-card-dark {
+    @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-xl;
+  }
+
+  /* Gradient Backgrounds */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(187 78% 30%) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(160 84% 30%) 100%);
+  }
+
+  .gradient-sidebar {
+    background: linear-gradient(180deg, hsl(var(--sidebar-background)) 0%, hsl(220 30% 4%) 100%);
+  }
+
+  /* Subtle Glow Effects */
+  .glow-primary {
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.4);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 40px -10px hsl(var(--accent) / 0.4);
+  }
+
+  /* Status Indicators */
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-online {
+    @apply bg-[hsl(var(--status-online))];
+    box-shadow: 0 0 8px hsl(var(--status-online) / 0.6);
+  }
+
+  .status-offline {
+    @apply bg-[hsl(var(--status-offline))];
+  }
+
+  .status-moving {
+    @apply bg-[hsl(var(--status-moving))];
+    box-shadow: 0 0 8px hsl(var(--status-moving) / 0.6);
+  }
+
+  .status-stopped {
+    @apply bg-[hsl(var(--status-stopped))];
+    box-shadow: 0 0 8px hsl(var(--status-stopped) / 0.6);
+  }
+
+  /* Interactive Cards */
+  .interactive-card {
+    @apply transition-all duration-300 ease-out hover:shadow-xl hover:-translate-y-0.5;
+  }
+
+  /* Map Marker Styles */
+  .map-marker {
+    @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-medium shadow-lg;
+    transition: transform 0.2s ease-out;
+  }
+
+  .map-marker:hover {
+    transform: scale(1.1);
+  }
+
+  .map-marker-car {
+    @apply bg-primary;
+  }
+
+  .map-marker-truck {
+    @apply bg-secondary;
+  }
+
+  .map-marker-motorcycle {
+    @apply bg-accent;
+  }
+
+  .map-marker-tractor {
+    @apply bg-warning text-warning-foreground;
+  }
+
+  /* Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@layer utilities {
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-up {
+    animation: slideInUp 0.4s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSoft 2s ease-in-out infinite;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes pulseSoft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Stagger Animation Delays */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+}
+
+/* Leaflet Map Overrides */
+.leaflet-container {
+  @apply bg-muted font-sans;
+  min-height: 400px;
+}
+
+/* Garantir que tiles carreguem corretamente */
+.leaflet-tile {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  @apply bg-card text-card-foreground rounded-xl shadow-xl border border-border;
+}
+
+.leaflet-popup-content {
+  color: hsl(var(--foreground));
+}
+
+.leaflet-popup-tip {
+  @apply bg-card;
+}
+
+.leaflet-popup-close-button {
+  @apply text-muted-foreground hover:text-foreground;
+}
+
+.leaflet-control-zoom {
+  @apply border-none shadow-lg overflow-hidden rounded-lg;
+}
+
+.leaflet-control-zoom a {
+  @apply bg-card text-foreground border-none hover:bg-muted;
+}
+
+.leaflet-control-zoom a:first-child {
+  @apply rounded-t-lg;
+}
+
+.leaflet-control-zoom a:last-child {
+  @apply rounded-b-lg border-t border-border;
+}
