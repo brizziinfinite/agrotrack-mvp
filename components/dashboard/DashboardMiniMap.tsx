@@ -29,11 +29,11 @@ const mockDevices = [
 
 export function DashboardMiniMap() {
   return (
-    <Card className="bg-[#050816] border border-white/5 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500/40 transition">
-      <CardHeader className="flex flex-row items-start justify-between">
+    <Card className="bg-[#0b1220]/80 border border-white/5 rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm h-full">
+      <CardHeader className="flex flex-row items-start justify-between px-4 pt-4 pb-2">
         <div>
-          <CardTitle className="text-base text-white">Mapa em Tempo Real</CardTitle>
-          <CardDescription className="text-sm text-slate-400">Visão geral da frota</CardDescription>
+          <CardTitle className="text-sm text-white">Mapa em Tempo Real</CardTitle>
+          <CardDescription className="text-xs text-slate-400">Visão geral da frota</CardDescription>
         </div>
         <Button
           size="sm"
@@ -44,9 +44,9 @@ export function DashboardMiniMap() {
           Tela cheia
         </Button>
       </CardHeader>
-      <CardContent>
-        <div className="h-[520px] rounded-xl overflow-hidden border border-white/10 bg-slate-950">
-          <Map devices={mockDevices} enableGeofence={false} />
+      <CardContent className="px-4 pb-4 pt-0 flex flex-col gap-3 h-full">
+        <div className="flex-1 min-h-[380px] rounded-xl overflow-hidden border border-white/10 bg-slate-950">
+          <Map devices={mockDevices} enableGeofence={false} className="h-full min-h-[360px]" />
         </div>
       </CardContent>
     </Card>

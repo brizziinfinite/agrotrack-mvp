@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -34,6 +35,7 @@ interface Device {
 interface MapProps {
   devices: Device[]
   enableGeofence?: boolean
+  className?: string
 }
 
 interface VirtualFence {
@@ -63,7 +65,7 @@ function MapRecenter({ devices }: { devices: Device[] }) {
   return null
 }
 
-export default function Map({ devices, enableGeofence = true }: MapProps) {
+export default function Map({ devices, enableGeofence = true, className }: MapProps) {
   const [virtualFences, setVirtualFences] = useState<VirtualFence[]>([])
   const [activeFenceId, setActiveFenceId] = useState<string | null>(null)
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | ''>('')
@@ -238,12 +240,12 @@ export default function Map({ devices, enableGeofence = true }: MapProps) {
   )
 
   return (
-    <div className="relative h-[520px] w-full rounded-2xl overflow-hidden border shadow-md bg-slate-900/50">
+    <div className={cn("relative w-full rounded-2xl overflow-hidden border shadow-md bg-slate-900/50", className || "h-[520px]")}>
       <MapContainer
         center={center}
         zoom={13}
         style={{ height: '100%', width: '100%' }}
-        className="z-0"
+        className="z-0 h-full w-full"
       >
         <TileLayer
           attribution={selectedBase.attribution}
@@ -545,8 +547,9 @@ function DrawControls({ onUpdate }: { onUpdate: (fences: VirtualFence[]) => void
       onUpdate(fences)
     }
 
-    const handleCreated = (event: L.DrawEvents.Created) => {
-      drawnItems.addLayer(event.layer)
+    const handleCreated: L.LeafletEventHandlerFn = (event) => {
+      const createdEvent = event as L.DrawEvents.Created
+      drawnItems.addLayer(createdEvent.layer)
       syncFences()
     }
 

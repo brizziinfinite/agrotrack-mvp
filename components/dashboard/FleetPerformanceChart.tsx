@@ -45,18 +45,18 @@ export function FleetPerformanceChart({ data = defaultData, className }: FleetPe
     .join(' ')
 
   return (
-    <Card className={cn('bg-[#050816] border border-white/5 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all', className)}>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+    <Card className={cn('bg-[#0b1220]/80 border border-white/5 rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm', className)}>
+      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3 px-4 pt-4">
         <div>
-          <CardTitle className="text-base text-white">Desempenho da Frota</CardTitle>
-          <CardDescription className="text-sm text-slate-400">Km rodados x Horas trabalhadas</CardDescription>
+          <CardTitle className="text-sm text-white">Desempenho da Frota</CardTitle>
+          <CardDescription className="text-xs text-slate-400">Km rodados x Horas trabalhadas</CardDescription>
         </div>
         <div className="flex gap-2">
           {['Semana', 'Mês', 'Ano'].map((range, idx) => (
             <button
               key={range}
               className={cn(
-                'px-3 py-1.5 rounded-full text-[11px] font-medium border transition',
+                'px-3 py-1 rounded-full text-[11px] font-medium border transition',
                 idx === 0
                   ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-100'
                   : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'
@@ -67,8 +67,8 @@ export function FleetPerformanceChart({ data = defaultData, className }: FleetPe
           ))}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="relative h-[320px] rounded-xl border border-white/5 bg-[#0a1222] overflow-hidden">
+      <CardContent className="px-4 pb-4">
+        <div className="relative h-[280px] rounded-xl border border-white/5 bg-[#0a1222]/80 overflow-hidden">
           <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full text-slate-700/50">
             {[20, 40, 60, 80].map((y) => (
               <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="currentColor" strokeWidth="0.4" strokeDasharray="2 2" />
@@ -78,7 +78,7 @@ export function FleetPerformanceChart({ data = defaultData, className }: FleetPe
             <polyline
               fill="none"
               stroke="#22d3ee"
-              strokeWidth="2"
+              strokeWidth="1.5"
               points={pointsKm}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -86,7 +86,7 @@ export function FleetPerformanceChart({ data = defaultData, className }: FleetPe
             <polyline
               fill="none"
               stroke="#f59e0b"
-              strokeWidth="2"
+              strokeWidth="1.5"
               points={pointsHours}
               strokeLinecap="round"
               strokeLinejoin="round"

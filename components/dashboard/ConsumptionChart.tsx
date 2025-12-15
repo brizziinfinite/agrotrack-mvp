@@ -20,13 +20,13 @@ export function ConsumptionChart({
   const maxValue = Math.max(...weeklyConsumption, ...weeklyKm, 1)
 
   return (
-    <Card className={cn('bg-[#050816] border border-white/5 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-500/40 transition-all', className)}>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base text-white">Consumo Semanal</CardTitle>
-        <CardDescription className="text-sm text-slate-400">Consumo estimado (L) vs quilometragem</CardDescription>
+    <Card className={cn('bg-[#0b1220]/80 border border-white/5 rounded-xl shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur-sm', className)}>
+      <CardHeader className="pb-3 px-4 pt-4">
+        <CardTitle className="text-sm text-white">Consumo Semanal</CardTitle>
+        <CardDescription className="text-xs text-slate-400">Consumo estimado (L) vs quilometragem</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="h-56 rounded-xl border border-white/5 bg-[#0a1222] px-4 py-4">
+      <CardContent className="px-4 pb-4">
+        <div className="h-56 rounded-xl border border-white/5 bg-[#0a1222]/80 px-4 py-4">
           <div className="flex h-full items-end gap-3">
             {weeklyConsumption.map((value, idx) => {
               const kmValue = weeklyKm[idx] ?? 0

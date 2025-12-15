@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, History, Activity, Map, MapPin, Tractor, UserRound, Wrench } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Activity, Map, MapPin, Tractor, UserRound, Wrench, FileText } from "lucide-react";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: Activity },
@@ -14,6 +14,7 @@ const menuItems = [
   { label: "Cercas", href: "/cercas", icon: MapPin },
   { label: "Motoristas", href: "/motoristas", icon: UserRound },
   { label: "Manutenção", href: "/manutencao", icon: Wrench },
+  { label: "Relatórios", href: "/relatorios", icon: FileText },
 ];
 
 export function Sidebar() {

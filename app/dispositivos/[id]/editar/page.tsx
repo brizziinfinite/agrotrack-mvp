@@ -64,7 +64,7 @@ export default function EditarMaquinaPage() {
           
           if (device) {
             setFormData({
-              id: device.id,
+              id: device.id.toString(),
               name: device.name || '',
               uniqueId: device.uniqueId || '',
               category: device.category || 'tractor',
@@ -104,7 +104,10 @@ export default function EditarMaquinaPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          id: Number(formData.id)
+        })
       })
 
       const result = await response.json()

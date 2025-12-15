@@ -52,6 +52,8 @@ interface Device {
     speedIdealMax?: number
     speedHighMax?: number
     speedExtremeName?: string
+    blocked?: boolean
+    driver?: string
   }
 }
 

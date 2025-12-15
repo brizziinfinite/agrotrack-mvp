@@ -58,50 +58,57 @@ export default function DashboardPage() {
   const stats = getVehicleStats()
 
   return (
-    <div className="w-full">
-      <div className="max-w-[1800px] mx-auto px-6 lg:px-10 py-6 lg:py-10 space-y-8">
+    <div className="w-full bg-gradient-to-b from-[#050816] via-[#050816] to-[#030412] min-h-screen">
+      <div className="relative">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,rgba(59,169,255,0.04),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(16,185,129,0.05),transparent_32%)]" />
+      </div>
+      <div className="relative max-w-6xl mx-auto px-4 lg:px-6 py-8 space-y-6">
         {/* Cabeçalho */}
         <div className="space-y-1">
           <p className="text-[11px] font-semibold tracking-[0.28em] text-emerald-400/80">OPERAÇÕES</p>
-          <h1 className="text-2xl lg:text-3xl font-semibold text-slate-50">Dashboard</h1>
+          <h1 className="text-3xl font-semibold text-slate-50">Dashboard</h1>
           <p className="text-sm text-slate-400">Visão geral da sua frota em tempo real</p>
         </div>
 
         {/* Faixa 1: KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 lg:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <DashboardKPICard
             title="Veículos Conectados"
             value={`${stats.connected}/${stats.total}`}
-            subtitle={`${stats.offline} offline · +12% vs ontem`}
+            subtitle={`${stats.offline} offline`}
             icon={<Truck className="h-4 w-4" />}
-            trend={{ value: 12, direction: 'up' }}
+            trend={{ value: 12, direction: 'up', label: 'vs ontem' }}
+            className="min-h-[170px]"
           />
           <DashboardKPICard
             title="Km Rodados Hoje"
             value={`${stats.totalKmToday} km`}
-            subtitle="+5% vs ontem"
+            subtitle="vs ontem"
             icon={<Route className="h-4 w-4" />}
             trend={{ value: 5, direction: 'up' }}
+            className="min-h-[170px]"
           />
           <DashboardKPICard
             title="Horas Trabalhadas"
             value={`${stats.totalHoursToday.toFixed(1)} h`}
-            subtitle="-3% vs ontem"
+            subtitle="vs ontem"
             icon={<Clock className="h-4 w-4" />}
-            trend={{ value: 3, direction: 'down' }}
+            trend={{ value: 3, direction: 'down', label: 'vs ontem' }}
+            className="min-h-[170px]"
           />
           <ConsumptionStatsCard
             consumptionPerKm={stats.avgConsumption}
             consumptionPerHour={stats.avgConsumptionPerHour}
-            trend={{ value: 2, direction: 'down' }}
+            trend={{ value: 2, direction: 'down', label: 'vs semana' }}
+            className="min-h-[170px]"
           />
-          <FleetStatusCard moving={stats.moving} stopped={stats.stopped + stats.idle} offline={stats.offline} />
-          <OperationalAlertsCard blocked={stats.blockedCount} speeding={stats.speedingCount} maintenance={stats.maintenanceCount} />
+          <FleetStatusCard moving={stats.moving} stopped={stats.stopped + stats.idle} offline={stats.offline} className="min-h-[170px]" />
+          <OperationalAlertsCard blocked={stats.blockedCount} speeding={stats.speedingCount} maintenance={stats.maintenanceCount} className="min-h-[170px]" />
         </div>
 
         {/* Faixa 2: Gráficos + Mini mapa */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="lg:col-span-7 space-y-4">
             <FleetPerformanceChart />
             <ConsumptionChart />
           </div>
@@ -111,7 +118,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Faixa 3: Listas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AlertsList items={alerts} />
           <RoutesTable items={popularRoutes} />
           <LastMovementList items={lastMovements} className="md:col-span-2 lg:col-span-1" />
