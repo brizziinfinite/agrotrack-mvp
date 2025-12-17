@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
   History,
   Search,
@@ -15,7 +16,9 @@ import {
   TrendingUp,
   Gauge,
   AlertCircle,
-  MapPin
+  MapPin,
+  Route,
+  PauseCircle
 } from 'lucide-react'
 import { getDeviceIcon } from '@/lib/device-icons'
 
@@ -60,7 +63,85 @@ interface HistoryData {
     maxSpeed: number
     pointCount: number
   }
+  trips: TripReport[]
+  stops: StopReport[]
 }
+
+interface TripReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  startAddress?: string
+  endAddress?: string
+  distance?: number
+  duration?: number
+  maxSpeed?: number
+  averageSpeed?: number
+}
+
+interface StopReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  address?: string
+  duration?: number
+  trips: TripReport[]
+  stops: StopReport[]
+}
+
+interface TripReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  startAddress?: string
+  endAddress?: string
+  distance?: number
+  duration?: number
+  maxSpeed?: number
+  averageSpeed?: number
+}
+
+interface StopReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  address?: string
+  duration?: number
+}
+
+const formatDateTime = (iso: string) => {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+const formatDuration = (seconds?: number) => {
+  if (seconds === undefined || seconds === null) return '—'
+  const totalMinutes = Math.floor(seconds / 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours === 0) {
+    return `${minutes} min`
+  }
+  return `${hours}h ${minutes}m`
+}
+
+const formatDistance = (meters?: number) => {
+  if (!meters) return '—'
+  return `${(meters / 1000).toFixed(2)} km`
+}
+
+const formatKnotsToKmh = (value?: number) => {
+  if (value === undefined || value === null) return '—'
+  return `${(value * 1.852).toFixed(1)} km/h`
+}
+
+const formatAddress = (value?: string) => value || 'Endereço não informado'
 
 type DateFilter = 'today' | 'yesterday' | 'week' | 'custom'
 
@@ -434,6 +515,111 @@ export default function HistoricoPage() {
                 </CardContent>
               </Card>
             </>
+          )}
+
+          {historyData && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <Card className="border-none shadow-lg">
+                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                      <Route className="h-5 w-5 text-emerald-600" />
+                      Viagens detectadas
+                    </CardTitle>
+                    <CardDescription>Relatório oficial do Traccar (`/reports/trips`).</CardDescription>
+                  </div>
+                  <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full">
+                    {historyData.trips.length} viagens
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                  {historyData.trips.length === 0 && (
+                    <p className="text-sm text-gray-500">
+                      Nenhuma viagem no período selecionado. Ajuste o intervalo de datas ou verifique o dispositivo.
+                    </p>
+                  )}
+                  {historyData.trips.map((trip, index) => (
+                    <div
+                      key={`${trip.startTime}-${index}`}
+                      className="rounded-2xl border border-emerald-100 bg-white/90 p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-sm font-semibold text-gray-900">
+                          Viagem {index + 1}
+                        </div>
+                        <Badge className="bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          {formatDuration(trip.duration)}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 space-y-1">
+                        <p>Início: {formatDateTime(trip.startTime)} · {formatAddress(trip.startAddress)}</p>
+                        <p>Fim: {formatDateTime(trip.endTime)} · {formatAddress(trip.endAddress)}</p>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-gray-900">
+                        <div>
+                          <p className="text-xs uppercase text-gray-500 tracking-wide">Distância</p>
+                          <p className="font-semibold">{formatDistance(trip.distance)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase text-gray-500 tracking-wide">Velocidade média</p>
+                          <p className="font-semibold">{formatKnotsToKmh(trip.averageSpeed)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase text-gray-500 tracking-wide">Velocidade máxima</p>
+                          <p className="font-semibold">{formatKnotsToKmh(trip.maxSpeed)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase text-gray-500 tracking-wide">Duração</p>
+                          <p className="font-semibold">{formatDuration(trip.duration)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-lg">
+                <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-gray-900">
+                      <PauseCircle className="h-5 w-5 text-blue-600" />
+                      Paradas detectadas
+                    </CardTitle>
+                    <CardDescription>Dados do relatório `/reports/stops`.</CardDescription>
+                  </div>
+                  <Badge className="bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full">
+                    {historyData.stops.length} paradas
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                  {historyData.stops.length === 0 && (
+                    <p className="text-sm text-gray-500">
+                      Nenhuma parada foi registrada no período selecionado.
+                    </p>
+                  )}
+                  {historyData.stops.map((stop, index) => (
+                    <div
+                      key={`${stop.startTime}-${index}`}
+                      className="rounded-2xl border border-blue-100 bg-white/90 p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-sm font-semibold text-gray-900">
+                          Parada {index + 1}
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-700 border border-blue-200">
+                          {formatDuration(stop.duration)}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500 space-y-1">
+                        <p>Início: {formatDateTime(stop.startTime)}</p>
+                        <p>Fim: {formatDateTime(stop.endTime)}</p>
+                        <p>Local: {formatAddress(stop.address)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {!historyData && !loading && !error && (

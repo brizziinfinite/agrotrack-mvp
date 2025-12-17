@@ -8,6 +8,27 @@ type DeviceWithAttributes = TraccarDevice & {
 
 type PositionMap = Map<number, TraccarPosition>
 
+const normalizeIgnition = (value: unknown): boolean => {
+  if (typeof value === 'string') {
+    return value === 'true' || value === '1'
+  }
+  if (typeof value === 'number') {
+    return value !== 0
+  }
+  return value === true
+}
+
+const classifyStatus = (
+  deviceStatus: string,
+  speedKmh: number,
+  ignitionOn: boolean
+): 'moving' | 'idle' | 'online' | 'offline' => {
+  if (deviceStatus === 'offline') return 'offline'
+  if (speedKmh > 1) return 'moving'
+  if (ignitionOn && speedKmh === 0) return 'idle'
+  return 'online'
+}
+
 export async function GET() {
   try {
     const toKmh = (speed: number) => Math.round((speed || 0) * 1.852 * 10) / 10
@@ -33,19 +54,25 @@ export async function GET() {
     
     const result = devices.map((device) => {
       const position = positionsMap.get(device.id)
+      const speedKmh = position ? toKmh(position.speed) : 0
+      const ignitionOn = normalizeIgnition(position?.attributes?.ignition ?? device.attributes?.ignition)
+      const statusDetail = classifyStatus(device.status, speedKmh, ignitionOn)
 
       return {
         id: device.id,
         name: device.name,
         uniqueId: device.uniqueId,
         category: device.category,
-        attributes: device.attributes || {},
+        attributes: { ...(device.attributes || {}), ignition: ignitionOn },
         status: device.status,
+        statusDetail,
+        ignitionOn,
         lastUpdate: device.lastUpdate,
         position: position
           ? {
               ...position,
-              speed: toKmh(position.speed)
+              speed: speedKmh,
+              attributes: { ...(position.attributes || {}), ignition: ignitionOn }
             }
           : null
       }

@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, History, Activity, Map, MapPin, Tractor, UserRound, Wrench, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Activity, Map, MapPin, Tractor, UserRound, Wrench, FileText, Infinity, Bell, Send, Workflow } from "lucide-react";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: Activity },
   { label: "Mapa", href: "/mapa", icon: Map },
+  { label: "Eventos", href: "/eventos", icon: Bell },
+  { label: "Comandos", href: "/comandos", icon: Send },
+  { label: "Atributos", href: "/atributos", icon: Workflow },
   { label: "Dispositivos", href: "/dispositivos", icon: Tractor },
   { label: "Histórico", href: "/historico", icon: History },
   { label: "Cercas", href: "/cercas", icon: MapPin },
@@ -34,16 +37,13 @@ export function Sidebar() {
       )}
     >
       {/* Topo */}
-      <div className="h-14 flex items-center justify-between px-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-            <Activity className="h-5 w-5 text-slate-950" />
-          </div>
+      <div className="h-16 px-6 flex items-center justify-between border-b border-white/5">
+        <div className={cn("flex items-center gap-2.5", collapsed ? "justify-center flex-1" : "")}>
+          <Infinity size={32} className="text-[#00E5FF] shrink-0" strokeWidth={2.5} />
           {!collapsed && (
-            <div>
-              <p className="text-sm font-semibold text-white leading-none">AgroTrack</p>
-              <p className="text-[11px] text-slate-400">Fazenda Santa Inês</p>
-            </div>
+            <span className="text-white text-xl font-semibold leading-none">
+              Prime Go
+            </span>
           )}
         </div>
         <button

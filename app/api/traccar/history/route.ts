@@ -2,9 +2,46 @@ import { NextResponse } from 'next/server'
 import { traccarClient, TraccarPosition } from '@/lib/traccar'
 
 interface SummaryReport {
+  deviceId: number
+  deviceName?: string
   distance?: number
   averageSpeed?: number
   maxSpeed?: number
+}
+
+interface TripReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  startAddress?: string
+  endAddress?: string
+  distance?: number
+  duration?: number
+  maxSpeed?: number
+  averageSpeed?: number
+}
+
+interface StopReport {
+  deviceId: number
+  deviceName?: string
+  startTime: string
+  endTime: string
+  address?: string
+  duration?: number
+}
+
+type HistoryResponse = {
+  positions: TraccarPosition[]
+  statistics: {
+    totalDistance: number
+    totalTime: number
+    avgSpeed: number
+    maxSpeed: number
+    pointCount: number
+  }
+  trips: TripReport[]
+  stops: StopReport[]
 }
 
 export async function GET(request: Request) {
@@ -27,8 +64,13 @@ export async function GET(request: Request) {
     console.log('🔍 Buscando histórico de rotas...')
     console.log(`Device: ${deviceId}, Período: ${from} até ${to}`)
 
-    const positionsUrl = `/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`
-    const positionsResponse = await traccarClient.get<TraccarPosition[]>(positionsUrl)
+    const [positionsResponse, summaryResponse, tripsResponse, stopsResponse] = await Promise.all([
+      traccarClient.get<TraccarPosition[]>(`/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`),
+      traccarClient.get<SummaryReport[]>(`/api/reports/summary?deviceId=${deviceId}&from=${from}&to=${to}`),
+      traccarClient.get<TripReport[]>(`/api/reports/trips?deviceId=${deviceId}&from=${from}&to=${to}`),
+      traccarClient.get<StopReport[]>(`/api/reports/stops?deviceId=${deviceId}&from=${from}&to=${to}`),
+    ])
+
     const positions = positionsResponse.data
 
     console.log(`✅ Encontradas ${positions.length} posições no histórico`)
@@ -39,10 +81,9 @@ export async function GET(request: Request) {
       )
     }
 
-    console.log('📊 Buscando estatísticas do Traccar Reports...')
-    const summaryUrl = `/api/reports/summary?deviceId=${deviceId}&from=${from}&to=${to}`
-    const summaryResponse = await traccarClient.get<SummaryReport[]>(summaryUrl)
-    const summary = summaryResponse.data[0] || {}
+    const summary = summaryResponse.data.find((item) => String(item.deviceId) === deviceId) ?? null
+    const trips = tripsResponse.data
+    const stops = stopsResponse.data
 
     console.log('📊 Estatísticas do Traccar:', summary)
 
@@ -93,18 +134,22 @@ export async function GET(request: Request) {
       pointCount: positionsKmh.length
     })
 
+    const payload: HistoryResponse = {
+      positions: positionsKmh,
+      statistics: {
+        totalDistance: Math.round(totalDistance * 100) / 100,
+        totalTime: Math.max(0, Math.round(totalTime)),
+        avgSpeed: Math.round(avgSpeed * 100) / 100,
+        maxSpeed: Math.round(maxSpeed * 100) / 100,
+        pointCount: positions.length
+      },
+      trips,
+      stops
+    }
+
     return NextResponse.json({
       success: true,
-      data: {
-        positions: positionsKmh,
-        statistics: {
-          totalDistance: Math.round(totalDistance * 100) / 100,
-          totalTime: Math.max(0, Math.round(totalTime)),
-          avgSpeed: Math.round(avgSpeed * 100) / 100,
-          maxSpeed: Math.round(maxSpeed * 100) / 100,
-          pointCount: positions.length
-        }
-      }
+      data: payload
     })
 
   } catch (error: unknown) {

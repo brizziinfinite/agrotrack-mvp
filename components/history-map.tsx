@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { Gauge, Pause, Play, RotateCcw } from 'lucide-react'
 
 const PAN_DURATION = 0.45
 const TRAIL_POINTS = 50
@@ -31,6 +32,7 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [playSpeed, setPlaySpeed] = useState(1)
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const markerRef = useRef<L.Marker | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const polylinesRef = useRef<L.Polyline[]>([])
@@ -87,6 +89,7 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
       }
       setIsPlaying(false)
       setCurrentIndex(0)
+      setShowSpeedMenu(false)
     }
   }, [positions.length])
 
@@ -97,6 +100,7 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
     // Reset playback para novo dataset
     setIsPlaying(false)
     setCurrentIndex(0)
+    setShowSpeedMenu(false)
 
     // Remover polilinhas e marcador anteriores
     polylinesRef.current.forEach(line => mapRef.current!.removeLayer(line))
@@ -264,41 +268,70 @@ export default function HistoryMap({ positions, deviceName, icon, speedRules }: 
       {/* Mapa */}
       <div ref={mapContainerRef} className="h-[500px] w-full rounded-lg" />
 
-      {/* Controles de Replay */}
+      {/* Controles de Replay (compactos, na lateral direita) */}
       {positions.length > 0 && (
-        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 z-[1000]">
-          <h3 className="font-bold mb-2">Replay</h3>
-          <div className="flex items-center gap-2 mb-2">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              {isPlaying ? '⏸ Pausar' : '▶ Play'}
-            </button>
-            <button
-              onClick={() => setCurrentIndex(0)}
-              className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            >
-              ↻
-            </button>
-          </div>
-          <div className="text-sm text-gray-600 mb-2">
-            Ponto {currentIndex + 1} / {positions.length}
-          </div>
-          <div className="flex gap-1">
-            {[1, 2, 4, 8].map(speed => (
-              <button
-                key={speed}
-                onClick={() => setPlaySpeed(speed)}
-                className={`px-3 py-1 rounded text-sm ${
-                  playSpeed === speed
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                {speed}x
-              </button>
-            ))}
+        <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => setIsPlaying((v) => !v)}
+            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white/95 text-slate-900 shadow-lg shadow-black/20 backdrop-blur transition hover:-translate-y-[1px] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label={isPlaying ? 'Pausar replay' : 'Iniciar replay'}
+          >
+            {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsPlaying(false)
+              setCurrentIndex(0)
+            }}
+            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white/95 text-slate-900 shadow-lg shadow-black/20 backdrop-blur transition hover:-translate-y-[1px] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label="Voltar para o início"
+          >
+            <RotateCcw className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowSpeedMenu((v) => !v)}
+            aria-expanded={showSpeedMenu}
+            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-black/10 bg-white/95 text-slate-900 shadow-lg shadow-black/20 backdrop-blur transition hover:-translate-y-[1px] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            aria-label="Alterar velocidade do replay"
+          >
+            <Gauge className="h-5 w-5" />
+          </button>
+
+          {showSpeedMenu && (
+            <div className="pointer-events-auto w-36 overflow-hidden rounded-xl border border-black/10 bg-white/95 shadow-lg shadow-black/20 backdrop-blur">
+              <div className="border-b border-black/5 bg-slate-900/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-100">
+                Velocidade
+              </div>
+              <div className="flex flex-col divide-y divide-slate-100">
+                {[1, 2, 4, 8].map((speed) => (
+                  <button
+                    key={speed}
+                    type="button"
+                    onClick={() => {
+                      setPlaySpeed(speed)
+                      setShowSpeedMenu(false)
+                    }}
+                    className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm font-semibold transition ${
+                      playSpeed === speed
+                        ? 'bg-emerald-50/80 text-emerald-900'
+                        : 'bg-white text-slate-800 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{speed}x</span>
+                    {playSpeed === speed && <span className="text-emerald-700">•</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pointer-events-auto rounded-full border border-black/10 bg-white/85 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm shadow-black/10 backdrop-blur">
+            {currentIndex + 1}/{positions.length} · {playSpeed}x
           </div>
         </div>
       )}

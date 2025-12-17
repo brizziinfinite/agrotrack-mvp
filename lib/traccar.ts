@@ -27,6 +27,9 @@ export interface TraccarDevice {
   category?: string
   model?: string
   disabled: boolean
+  attributes?: Record<string, unknown>
+  contact?: string
+  phone?: string
 }
 
 export interface TraccarPosition {
@@ -53,6 +56,52 @@ export interface TraccarPosition {
     hours?: number
     [key: string]: unknown
   }
+}
+
+export interface TraccarEvent {
+  id: number
+  type: string
+  eventTime: string
+  serverTime: string
+  positionId?: number
+  deviceId?: number
+  geofenceId?: number
+  maintenanceId?: number
+  attributes?: Record<string, unknown>
+}
+
+export interface TraccarNotification {
+  id: number
+  type: string
+  always?: boolean
+  web?: boolean
+  mail?: boolean
+  sms?: boolean
+  calendarId?: number
+  attributes?: Record<string, unknown>
+}
+
+export interface TraccarCommand {
+  id?: number
+  description?: string
+  type: string
+  deviceId?: number
+  groupId?: number
+  textChannel?: boolean
+  attributes?: Record<string, unknown>
+}
+
+export interface TraccarCommandType {
+  type: string
+}
+
+export interface TraccarComputedAttribute {
+  id: number
+  description: string
+  attribute: string
+  expression: string
+  type: string
+  priority?: number
 }
 
 // Funções helper

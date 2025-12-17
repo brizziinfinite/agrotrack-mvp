@@ -36,6 +36,8 @@ interface MapProps {
   devices: Device[]
   enableGeofence?: boolean
   className?: string
+  selectedDeviceId?: number | null
+  onDeviceSelect?: (device: Device) => void
 }
 
 interface VirtualFence {
@@ -65,10 +67,29 @@ function MapRecenter({ devices }: { devices: Device[] }) {
   return null
 }
 
-export default function Map({ devices, enableGeofence = true, className }: MapProps) {
+function SelectionFocus({
+  devices,
+  selectedDeviceId
+}: {
+  devices: Device[]
+  selectedDeviceId?: number | null
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!selectedDeviceId) return
+    const selected = devices.find((d) => d.id === selectedDeviceId)
+    if (!selected?.position) return
+    map.flyTo([selected.position.latitude, selected.position.longitude], 15, { duration: 1.1 })
+  }, [devices, selectedDeviceId, map])
+
+  return null
+}
+
+export default function Map({ devices, enableGeofence = true, className, selectedDeviceId, onDeviceSelect }: MapProps) {
   const [virtualFences, setVirtualFences] = useState<VirtualFence[]>([])
   const [activeFenceId, setActiveFenceId] = useState<string | null>(null)
-  const [selectedDeviceId, setSelectedDeviceId] = useState<number | ''>('')
+  const [selectedFenceDeviceId, setSelectedFenceDeviceId] = useState<number | ''>('')
   const [fenceName, setFenceName] = useState('')
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -108,14 +129,14 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
       .map((d) => ({ id: d.id, name: d.name }))
   }, [deviceOptions, deviceSearch, devices])
   const optionsWithSelected = useMemo(() => {
-    if (!selectedDeviceId) return filteredDeviceOptions
-    const exists = filteredDeviceOptions.find((d) => d.id === selectedDeviceId)
+    if (!selectedFenceDeviceId) return filteredDeviceOptions
+    const exists = filteredDeviceOptions.find((d) => d.id === selectedFenceDeviceId)
     if (exists) return filteredDeviceOptions
-    const selectedDevice = devices.find((d) => d.id === selectedDeviceId)
+    const selectedDevice = devices.find((d) => d.id === selectedFenceDeviceId)
     return selectedDevice
       ? [{ id: selectedDevice.id, name: selectedDevice.name }, ...filteredDeviceOptions]
       : filteredDeviceOptions
-  }, [devices, filteredDeviceOptions, selectedDeviceId])
+  }, [devices, filteredDeviceOptions, selectedFenceDeviceId])
   const activeFence = useMemo(() => {
     if (activeFenceId) {
       return virtualFences.find((f) => f.id === activeFenceId) || null
@@ -135,18 +156,18 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
 
   useEffect(() => {
     if (!enableGeofence) return
-    if (!selectedDeviceId && deviceOptions.length > 0) {
-      setSelectedDeviceId(deviceOptions[0].id)
+    if (!selectedFenceDeviceId && deviceOptions.length > 0) {
+      setSelectedFenceDeviceId(deviceOptions[0].id)
     }
-  }, [deviceOptions, enableGeofence, selectedDeviceId])
+  }, [deviceOptions, enableGeofence, selectedFenceDeviceId])
 
   useEffect(() => {
     if (!enableGeofence) return
-    const deviceName = deviceOptions.find((d) => d.id === selectedDeviceId)?.name
+    const deviceName = deviceOptions.find((d) => d.id === selectedFenceDeviceId)?.name
     if (deviceName) {
       setFenceName(`Cerca ${deviceName}`)
     }
-  }, [deviceOptions, enableGeofence, selectedDeviceId])
+  }, [deviceOptions, enableGeofence, selectedFenceDeviceId])
 
   async function handleSaveFence() {
     if (!enableGeofence) return
@@ -156,7 +177,7 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
       setSaveError('Desenhe uma cerca no mapa para salvar.')
       return
     }
-    if (!selectedDeviceId) {
+    if (!selectedFenceDeviceId) {
       setSaveError('Selecione um dispositivo para vincular a cerca.')
       return
     }
@@ -167,8 +188,8 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: fenceName || `Cerca ${selectedDeviceId}`,
-          deviceId: selectedDeviceId,
+          name: fenceName || `Cerca ${selectedFenceDeviceId}`,
+          deviceId: selectedFenceDeviceId,
           shape: activeFence
         })
       })
@@ -254,14 +275,19 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
         />
         
         <MapRecenter devices={devices} />
+        <SelectionFocus devices={devicesWithPosition} selectedDeviceId={selectedDeviceId || null} />
         {enableGeofence && <DrawControls onUpdate={setVirtualFences} />}
         
         {devicesWithPosition.map((device) => (
           <Marker
             key={device.id}
             position={[device.position!.latitude, device.position!.longitude]}
+            eventHandlers={{
+              click: () => onDeviceSelect?.(device)
+            }}
             icon={(() => {
               const icon = getDeviceIcon(device.category)
+              const isSelected = selectedDeviceId === device.id
               const baseHtml = `
                 <div style="
                   position: relative;
@@ -280,9 +306,11 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                    border: 3px solid white;
+                    box-shadow: ${isSelected ? '0 0 0 3px rgba(52,211,153,0.35), 0 10px 30px rgba(16,185,129,0.35)' : '0 4px 12px rgba(0,0,0,0.2)'};
+                    border: 3px solid ${isSelected ? '#34d399' : 'white'};
                     color: ${icon.color};
+                    transform: ${isSelected ? 'scale(1.05)' : 'none'};
+                    transition: transform 150ms ease, box-shadow 150ms ease, border 150ms ease;
                   ">
                     ${icon.emoji}
                   </div>
@@ -431,8 +459,8 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
             />
             <select
               className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-              value={selectedDeviceId}
-              onChange={(e) => setSelectedDeviceId(Number(e.target.value))}
+              value={selectedFenceDeviceId}
+              onChange={(e) => setSelectedFenceDeviceId(Number(e.target.value))}
             >
               {optionsWithSelected.map((device) => (
                 <option key={device.id} value={device.id}>
@@ -455,7 +483,7 @@ export default function Map({ devices, enableGeofence = true, className }: MapPr
           <button
             type="button"
             onClick={handleSaveFence}
-            disabled={saving || !activeFence || !selectedDeviceId}
+            disabled={saving || !activeFence || !selectedFenceDeviceId}
             className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
           >
             {saving ? 'Salvando cerca...' : 'Salvar e vincular cerca'}
