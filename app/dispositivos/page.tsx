@@ -192,7 +192,7 @@ export default function MaquinasPage() {
   const noDevices = filteredDevices.length === 0
 
   return (
-    <>
+    <div className="h-full overflow-y-auto p-6">
       <div className="min-h-screen bg-[#0a111c] text-foreground">
         <div className="w-full">
           {/* Top bar estilo Lovable */}
@@ -627,6 +627,6 @@ export default function MaquinasPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -117,8 +117,9 @@ export default function NovaMaquinaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a111c] text-slate-100 flex items-center justify-center px-4 py-8">
-      <Card className="w-full max-w-4xl bg-[#0d1523] border border-[#1f2735] text-slate-100">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="min-h-screen bg-[#0a111c] text-slate-100 flex items-center justify-center px-4 py-8">
+        <Card className="w-full max-w-4xl bg-[#0d1523] border border-[#1f2735] text-slate-100">
         <CardHeader className="pb-2">
           <CardTitle className="text-2xl font-semibold">Novo Dispositivo/Veículo</CardTitle>
           <CardDescription className="text-slate-400">
@@ -359,7 +360,8 @@ export default function NovaMaquinaPage() {
             )}
           </form>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }

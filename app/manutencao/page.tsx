@@ -187,8 +187,9 @@ export default function ManutencaoPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#0a111c] text-slate-100">
-      <div className="sticky top-0 z-30 w-full bg-[#0c141f] border-b border-[#141c2a] shadow-[0_6px_20px_rgba(0,0,0,0.35)]">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="min-h-screen bg-[#0a111c] text-slate-100">
+        <div className="sticky top-0 z-30 w-full bg-[#0c141f] border-b border-[#141c2a] shadow-[0_6px_20px_rgba(0,0,0,0.35)]">
         <div className="max-w-[1700px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-4">
           <div className="relative flex-1 max-w-[520px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
@@ -693,6 +694,7 @@ export default function ManutencaoPage() {
         </div>
       )}
     </div>
+  </div>
   )
 }
 import { Label } from '@/components/ui/label'

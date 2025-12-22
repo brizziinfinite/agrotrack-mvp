@@ -58,7 +58,7 @@ export default function CercasPage() {
   const totalDevices = fences.reduce((sum, fence) => sum + fence.devices.length, 0)
 
   return (
-    <>
+    <div className="h-full overflow-y-auto p-6">
       <Header />
       <div className="min-h-screen bg-[radial-gradient(circle_at_10%_20%,rgba(16,185,129,0.12),transparent_30%),radial-gradient(circle_at_90%_0%,rgba(59,130,246,0.1),transparent_28%),#f7fafc]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -209,6 +209,6 @@ export default function CercasPage() {
           </Card>
         </div>
       </div>
-    </>
+    </div>
   )
 }

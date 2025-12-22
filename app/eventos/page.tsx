@@ -313,8 +313,9 @@ export default function EventosPage() {
   }, [fromValue, toValue])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#050816] via-[#050816] to-[#030412] text-white">
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8 space-y-8">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="min-h-screen bg-gradient-to-b from-[#050816] via-[#050816] to-[#030412] text-white">
+        <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8 space-y-8">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold tracking-[0.28em] text-emerald-400/80">TRACCAR</p>
           <h1 className="text-3xl font-semibold text-slate-50">Eventos e Notificações</h1>
@@ -588,6 +589,7 @@ export default function EventosPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   )

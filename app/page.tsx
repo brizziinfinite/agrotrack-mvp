@@ -138,10 +138,12 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando dados do Traccar...</p>
+      <div className="h-full overflow-y-auto p-6">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full border-b-2 border-gray-900 animate-spin"></div>
+            <p className="text-gray-600">Carregando dados do Traccar...</p>
+          </div>
         </div>
       </div>
     )
@@ -149,22 +151,24 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              Erro na conexão
-            </CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="h-full overflow-y-auto p-6">
+        <div className="flex items-center justify-center min-h-screen">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                Erro na conexão
+              </CardTitle>
+              <CardDescription>{error}</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       </div>
     )
   }
 
   return (
-    <>
+    <div className="h-full overflow-y-auto p-6">
       <Header />
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_20%,rgba(59,169,255,0.08),transparent_30%),radial-gradient(circle_at_80%_0%,rgba(34,211,238,0.08),transparent_28%),#0a1424] text-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -326,6 +330,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-    </>
+    </div>
   )
 }

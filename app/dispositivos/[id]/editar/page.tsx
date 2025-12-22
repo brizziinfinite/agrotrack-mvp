@@ -130,7 +130,7 @@ export default function EditarMaquinaPage() {
 
   if (loadingData) {
     return (
-      <>
+      <div className="h-full overflow-y-auto p-6">
         <Header />
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20 flex items-center justify-center">
           <div className="text-center">
@@ -138,12 +138,12 @@ export default function EditarMaquinaPage() {
             <p className="text-gray-600">Carregando dados do dispositivo...</p>
           </div>
         </div>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
+    <div className="h-full overflow-y-auto p-6">
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -430,6 +430,6 @@ export default function EditarMaquinaPage() {
           </Card>
         </div>
       </div>
-    </>
+    </div>
   )
 }

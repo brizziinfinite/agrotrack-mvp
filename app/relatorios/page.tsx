@@ -90,8 +90,9 @@ export default function RelatoriosPage() {
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="w-full">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-8 space-y-8">
         <div className="space-y-1">
           <h1 className="text-3xl font-bold text-slate-50">Relatórios</h1>
           <p className="text-slate-400">Gere e baixe relatórios detalhados da sua frota</p>
@@ -234,5 +235,6 @@ export default function RelatoriosPage() {
         </div>
       )}
     </div>
+  </div>
   )
 }

@@ -99,10 +99,10 @@ export default function MotoristasPage() {
   const vacation = mockDrivers.filter((d) => d.status === 'ferias').length
 
   return (
-    <div className="min-h-screen bg-[#0a111c] text-slate-100">
-      <div className="sticky top-0 z-30 w-full bg-[#0c141f] border-b border-[#141c2a] shadow-[0_6px_20px_rgba(0,0,0,0.35)]">
-        <div className="max-w-[1700px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-4">
-          <div className="relative flex-1 max-w-[520px]">
+    <div className="h-full overflow-y-auto p-6">
+      <div className="min-h-screen bg-[#0a111c] text-slate-100">
+        <div className="sticky top-0 z-30 w-full bg-[#0c141f] border-b border-[#141c2a] shadow-[0_6px_20px_rgba(0,0,0,0.35)]">
+          <div className="max-w-[1700px] mx-auto px-6 lg:px-10 h-16 flex items-center gap-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
             <Input
               value={search}
@@ -236,7 +236,7 @@ export default function MotoristasPage() {
             </div>
           </CardContent>
         </Card>
-    </div>
+      </div>
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
