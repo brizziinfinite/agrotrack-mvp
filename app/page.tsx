@@ -19,7 +19,7 @@ function getSpeedColor(speed: number, attrs?: { speedIdealMax?: number; speedHig
 }
 
 // Importar Map dinamicamente (client-side only)
-const Map = dynamic(() => import('@/components/map'), {
+const Map = dynamic(() => import('@/components/ui/map'), {
   ssr: false,
   loading: () => (
     <div className="h-[500px] w-full rounded-lg border bg-gray-100 flex items-center justify-center">

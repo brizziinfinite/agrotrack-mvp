@@ -39,6 +39,7 @@ type HistoryResponse = {
     avgSpeed: number
     maxSpeed: number
     pointCount: number
+    idleTime: number
   }
   trips: TripReport[]
   stops: StopReport[]
@@ -64,6 +65,8 @@ export async function GET(request: Request) {
     console.log('🔍 Buscando histórico de rotas...')
     console.log(`Device: ${deviceId}, Período: ${from} até ${to}`)
 
+    const download = searchParams.get('download') === '1'
+
     const [positionsResponse, summaryResponse, tripsResponse, stopsResponse] = await Promise.all([
       traccarClient.get<TraccarPosition[]>(`/api/positions?deviceId=${deviceId}&from=${from}&to=${to}`),
       traccarClient.get<SummaryReport[]>(`/api/reports/summary?deviceId=${deviceId}&from=${from}&to=${to}`),
@@ -82,8 +85,18 @@ export async function GET(request: Request) {
     }
 
     const summary = summaryResponse.data.find((item) => String(item.deviceId) === deviceId) ?? null
-    const trips = tripsResponse.data
-    const stops = stopsResponse.data
+    const normalizeDuration = (value?: number) =>
+      typeof value === 'number' && Number.isFinite(value) ? Math.round(value / 1000) : undefined
+
+    const trips = tripsResponse.data.map((trip) => ({
+      ...trip,
+      duration: normalizeDuration(trip.duration)
+    }))
+
+    const stops = stopsResponse.data.map((stop) => ({
+      ...stop,
+      duration: normalizeDuration(stop.duration)
+    }))
 
     console.log('📊 Estatísticas do Traccar:', summary)
 
@@ -95,7 +108,21 @@ export async function GET(request: Request) {
     }))
 
     // Distância do próprio Traccar (vem em metros)
-    const totalDistance = summary?.distance ? summary.distance / 1000 : 0
+    let totalDistance = summary?.distance ? summary.distance / 1000 : 0
+
+    if ((!totalDistance || Number.isNaN(totalDistance)) && positions.length > 1) {
+      const firstDistance = positions[0].attributes?.totalDistance ?? null
+      const lastDistance = positions[positions.length - 1].attributes?.totalDistance ?? null
+      if (typeof firstDistance === 'number' && typeof lastDistance === 'number' && lastDistance > firstDistance) {
+        totalDistance = (lastDistance - firstDistance) / 1000
+      } else {
+        const sumDistance = positions.reduce((acc, pos) => {
+          const diff = typeof pos.attributes?.distance === 'number' ? pos.attributes.distance : 0
+          return acc + diff
+        }, 0)
+        totalDistance = sumDistance / 1000
+      }
+    }
 
     // Velocidade média/máxima do summary (também em nós) com fallback nos pontos
     const summaryAvg = summary?.averageSpeed ? toKmh(summary.averageSpeed) : null
@@ -126,6 +153,24 @@ export async function GET(request: Request) {
       totalTime = (last - first) / 1000 / 60
     }
 
+    // Marcha lenta: motor ligado porém velocidade zero
+    const isIgnitionOn = (pos: TraccarPosition) => {
+      const ignition = pos.attributes?.ignition
+      if (typeof ignition === 'boolean') return ignition
+      return pos.speed > 0
+    }
+
+    let idleTimeSeconds = 0
+    for (let i = 0; i < positionsKmh.length - 1; i += 1) {
+      const current = positionsKmh[i]
+      const next = positionsKmh[i + 1]
+      const deltaSeconds = (new Date(next.deviceTime).getTime() - new Date(current.deviceTime).getTime()) / 1000
+      if (deltaSeconds <= 0 || !Number.isFinite(deltaSeconds) || deltaSeconds > 60 * 60) continue
+      if (isIgnitionOn(current) && current.speed <= 1) {
+        idleTimeSeconds += deltaSeconds
+      }
+    }
+
     console.log('📊 Consolidado:', {
       totalDistance,
       maxSpeed,
@@ -141,10 +186,58 @@ export async function GET(request: Request) {
         totalTime: Math.max(0, Math.round(totalTime)),
         avgSpeed: Math.round(avgSpeed * 100) / 100,
         maxSpeed: Math.round(maxSpeed * 100) / 100,
-        pointCount: positions.length
+        pointCount: positions.length,
+        idleTime: Math.round(idleTimeSeconds),
       },
       trips,
       stops
+    }
+
+    if (download) {
+      const headers = [
+        'Horário',
+        'Latitude',
+        'Longitude',
+        'Velocidade (km/h)',
+        'Endereço',
+        'Ignição',
+        'Status'
+      ]
+
+      const mapValue = (value: unknown) => {
+        const stringValue = value === null || value === undefined ? '' : String(value)
+        return `"${stringValue.replace(/"/g, '""')}"`
+      }
+
+      const rows = positionsKmh.map((pos) => {
+        const status = pos.speed > 1 ? 'Em movimento' : 'Parado'
+        const ignition =
+          typeof pos.attributes?.ignition === 'boolean'
+            ? pos.attributes.ignition
+              ? 'Ligada'
+              : 'Desligada'
+            : ''
+
+        return [
+          new Date(pos.deviceTime).toLocaleString('pt-BR'),
+          pos.latitude.toFixed(6),
+          pos.longitude.toFixed(6),
+          pos.speed.toFixed(2),
+          pos.address || '',
+          ignition,
+          status
+        ]
+          .map(mapValue)
+          .join(';')
+      })
+
+      const csvContent = [headers.map(mapValue).join(';'), ...rows].join('\n')
+      return new NextResponse(csvContent, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename=\"historico_${deviceId}_${Date.now()}.csv\"`
+        }
+      })
     }
 
     return NextResponse.json({

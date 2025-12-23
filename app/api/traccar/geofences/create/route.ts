@@ -12,7 +12,10 @@ interface FenceShape {
 interface CreateGeofenceRequest {
   name: string
   description?: string
-  deviceId: number
+  deviceId?: number
+  deviceIds?: number[]
+  type?: string
+  direction?: string
   shape: FenceShape
 }
 
@@ -43,11 +46,13 @@ function circleToWkt(coordinates: [number, number][], radius?: number) {
 export async function POST(request: Request) {
   try {
     const body: CreateGeofenceRequest = await request.json()
-    const { name, description, deviceId, shape } = body
+    const { name, description, deviceId, deviceIds, type, direction, shape } = body
 
-    if (!name || !deviceId || !shape || !shape.type || !shape.coordinates?.length) {
+    const deviceList = Array.isArray(deviceIds) && deviceIds.length > 0 ? deviceIds : deviceId ? [deviceId] : []
+
+    if (!name || !shape || !shape.type || !shape.coordinates?.length || deviceList.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Dados obrigatórios: name, deviceId e shape' },
+        { success: false, error: 'Informe nome, dispositivos e desenho da cerca.' },
         { status: 400 }
       )
     }
@@ -64,16 +69,23 @@ export async function POST(request: Request) {
       name,
       description: description || '',
       area,
-      attributes: {}
+      attributes: {
+        geofenceType: type || '',
+        direction: direction || ''
+      }
     }
 
     const geofenceResponse = await traccarClient.post('/api/geofences', geofencePayload)
     const geofenceId = geofenceResponse.data.id
 
-    await traccarClient.post('/api/permissions', {
-      deviceId,
-      geofenceId
-    })
+    await Promise.all(
+      deviceList.map((device) =>
+        traccarClient.post('/api/permissions', {
+          deviceId: device,
+          geofenceId
+        })
+      )
+    )
 
     return NextResponse.json({
       success: true,
